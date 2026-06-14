@@ -36,6 +36,6 @@ RSpec.describe Pipelines::CreateFromTemplateService do
     )
 
     expect { service.perform }.to raise_error(ActiveRecord::RecordInvalid, /Add at least one stage/)
-    expect(account.pipelines).to be_empty
+    expect(Pipeline.exists?).to be(false)
   end
 end

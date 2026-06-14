@@ -7,7 +7,7 @@ RSpec.describe PipelineStage do
   end
 
   describe 'validations' do
-    subject { build(:pipeline_stage) }
+    subject { create(:pipeline_stage) }
 
     it { is_expected.to validate_presence_of(:name) }
     it { is_expected.to validate_numericality_of(:position).only_integer.is_greater_than_or_equal_to(0) }
