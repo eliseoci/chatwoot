@@ -304,6 +304,10 @@ Rails.application.routes.draw do
             end
           end
 
+          resources :pipelines, only: [:index, :show, :create] do
+            get :templates, on: :collection
+          end
+
           # Assignment V2 Routes
           resources :assignment_policies do
             resources :inboxes, only: [:index, :create, :destroy], module: :assignment_policies

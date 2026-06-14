@@ -111,12 +111,15 @@ app/models/pipelines/
 app/services/pipelines/
 app/jobs/pipelines/
 app/policies/pipeline*.rb
-app/controllers/api/v1/accounts/pipelines/
+app/controllers/api/v1/accounts/pipeline*.rb
 app/views/api/v1/accounts/pipelines/
-app/javascript/dashboard/api/pipelines/
+app/views/api/v1/models/_pipeline*.jbuilder
+app/javascript/dashboard/api/pipeline*.js
+app/javascript/dashboard/routes/dashboard/settings/pipelines/
 app/javascript/dashboard/routes/dashboard/pipelines/
 app/javascript/dashboard/store/modules/pipelines/
 config/locales/pipelines/
+db/migrate/*pipeline*
 spec/**/pipeline*
 spec/**/pipelines/
 ```
@@ -159,6 +162,9 @@ Pipelines must not:
 ## Data invariants
 
 - Every record is account-scoped.
+- A Pipeline owns an ordered set of Pipeline Stages.
+- A terminal Pipeline Stage must declare an explicit outcome key; an active
+  stage must not declare one.
 - Pipeline Item, stage, contact, company, owner, team, and linked conversations
   must belong to the same account.
 - An item stage belongs to the item's pipeline.

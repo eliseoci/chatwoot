@@ -30,3 +30,95 @@ jobs:
           GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
         run: script/nexo/validate_distribution_guardrails.sh
+
+  pipelines-backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ''
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --mount type=tmpfs,destination=/var/lib/postgresql/data
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: --entrypoint valkey-server
+    env:
+      RAILS_ENV: test
+      POSTGRES_HOST: localhost
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Create test database
+        run: bundle exec rake db:create db:schema:load
+
+      - name: Lint Pipelines backend
+        run: |
+          bundle exec rubocop \
+            app/controllers/api/v1/accounts/pipelines_controller.rb \
+            app/models/pipeline.rb \
+            app/models/pipeline_stage.rb \
+            app/policies/pipeline_policy.rb \
+            app/services/pipelines \
+            db/migrate/20260614000000_create_pipelines.rb \
+            spec/factories/pipelines.rb \
+            spec/models/pipeline_spec.rb \
+            spec/models/pipeline_stage_spec.rb \
+            spec/requests/api/v1/accounts/pipelines_spec.rb \
+            spec/services/pipelines
+
+      - name: Run Pipelines backend specs
+        run: |
+          bundle exec rspec \
+            spec/models/pipeline_spec.rb \
+            spec/models/pipeline_stage_spec.rb \
+            spec/requests/api/v1/accounts/pipelines_spec.rb \
+            spec/services/pipelines
+
+  pipelines-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Pipelines frontend
+        run: |
+          pnpm exec eslint \
+            app/javascript/dashboard/api/pipelines.js \
+            app/javascript/dashboard/api/specs/pipelines.spec.js \
+            app/javascript/dashboard/routes/dashboard/settings/pipelines
+
+      - name: Run Pipelines frontend specs
+        run: |
+          pnpm run test -- \
+            app/javascript/dashboard/api/specs/pipelines.spec.js \
+            app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js

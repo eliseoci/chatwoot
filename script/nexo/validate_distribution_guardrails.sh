@@ -41,6 +41,7 @@ working_tree_files="$(
   {
     git diff --name-only
     git diff --cached --name-only
+    git ls-files --others --exclude-standard
   } | sort -u
 )"
 
@@ -61,12 +62,16 @@ pipeline_roots=(
   'app/services/pipelines/'
   'app/jobs/pipelines/'
   'app/policies/pipeline'
-  'app/controllers/api/v1/accounts/pipelines/'
+  'app/controllers/api/v1/accounts/pipeline'
   'app/views/api/v1/accounts/pipelines/'
-  'app/javascript/dashboard/api/pipelines/'
+  'app/views/api/v1/models/_pipeline'
+  'app/javascript/dashboard/api/pipeline'
+  'app/javascript/dashboard/api/specs/pipeline'
+  'app/javascript/dashboard/routes/dashboard/settings/pipelines/'
   'app/javascript/dashboard/routes/dashboard/pipelines/'
   'app/javascript/dashboard/store/modules/pipelines/'
   'config/locales/pipelines/'
+  'db/migrate/'
   'spec/'
 )
 
@@ -102,7 +107,7 @@ while IFS= read -r path; do
       fail "Pipeline domain file is an exact copy of Enterprise code: $path"
     fi
   done < <(find enterprise -type f -name "$basename_match" 2>/dev/null)
-done < <(git ls-files)
+done < <(git ls-files --cached --others --exclude-standard)
 
 if [[ -n "$changed_files" ]]; then
   while IFS= read -r path; do

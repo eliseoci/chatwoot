@@ -336,6 +336,7 @@
     "AUTOMATION": "Automation",
     "MACROS": "Macros",
     "TEAMS": "Teams",
+    "PIPELINES": "Pipelines",
     "BILLING": "Billing",
     "CUSTOM_VIEWS_FOLDER": "Folders",
     "CUSTOM_VIEWS_SEGMENTS": "Segments",
@@ -645,6 +646,34 @@
       "SWITCH_TO_PRIVATE_NOTE": "Switch to Private Note",
       "SWITCH_TO_REPLY": "Switch to Reply",
       "TOGGLE_SNOOZE_DROPDOWN": "Toggle snooze dropdown"
+    }
+  },
+  "PIPELINES_SETTINGS": {
+    "HEADER": "Pipelines",
+    "DESCRIPTION": "Create workflows that track business progress independently from conversation status.",
+    "LOADING": "Loading pipelines",
+    "FORM": {
+      "TITLE": "Create a pipeline",
+      "DESCRIPTION": "Start from a proven workflow or define your own stages.",
+      "NAME_LABEL": "Pipeline name",
+      "NAME_PLACEHOLDER": "For example, New business",
+      "DESCRIPTION_LABEL": "Description",
+      "DESCRIPTION_PLACEHOLDER": "What should this pipeline help your team manage?",
+      "TEMPLATE_LABEL": "Workflow template",
+      "CUSTOM_STAGES_LABEL": "Stages",
+      "CUSTOM_STAGES_PLACEHOLDER": "Enter one stage per line",
+      "SUBMIT": "Create pipeline"
+    },
+    "LIST": {
+      "TITLE": "Your pipelines",
+      "DESCRIPTION": "Stages marked as outcomes are separate from open or resolved conversations.",
+      "EMPTY": "No pipelines yet. Create one to start organizing workflow.",
+      "TERMINAL": "Outcome"
+    },
+    "API": {
+      "LOAD_ERROR": "Pipelines could not be loaded.",
+      "CREATE_SUCCESS": "Pipeline created.",
+      "CREATE_ERROR": "Pipeline could not be created."
     }
   },
   "ASSIGNMENT_POLICY": {

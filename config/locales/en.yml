@@ -30,6 +30,63 @@
 # available at https://guides.rubyonrails.org/i18n.html.
 
 en:
+  pipeline_templates:
+    sales:
+      name: Sales
+      description: Qualify leads and move opportunities to a clear outcome.
+      stages:
+        new_lead: New lead
+        qualified: Qualified
+        proposal: Proposal
+        won: Won
+        lost: Lost
+    support:
+      name: Customer support
+      description: Track customer issues from intake through resolution.
+      stages:
+        new: New
+        investigating: Investigating
+        waiting: Waiting
+        resolved: Resolved
+    recruitment:
+      name: Recruitment
+      description: Move candidates from application to a hiring decision.
+      stages:
+        applied: Applied
+        screening: Screening
+        interview: Interview
+        hired: Hired
+        rejected: Rejected
+    onboarding:
+      name: Customer onboarding
+      description: Guide new customers from setup through launch.
+      stages:
+        new_customer: New customer
+        setup: Setup
+        training: Training
+        live: Live
+    collections:
+      name: Collections
+      description: Track outstanding accounts through payment or escalation.
+      stages:
+        new_account: New account
+        contacted: Contacted
+        payment_plan: Payment plan
+        paid: Paid
+        escalated: Escalated
+    real_estate:
+      name: Real estate
+      description: Manage property inquiries from qualification to close.
+      stages:
+        new_inquiry: New inquiry
+        qualified: Qualified
+        viewing: Viewing
+        offer: Offer
+        closed: Closed
+        lost: Lost
+    custom:
+      name: Custom
+      description: Start with your own workflow stages.
   hello: 'Hello world'
   inbox:
     reauthorization:
@@ -53,6 +110,10 @@ en:
         invalid: is not a valid timezone
       support_email:
         invalid: is not a valid email address
+    pipeline:
+      stages_required: Add at least one stage to a custom pipeline.
+    pipeline_stage:
+      account_mismatch: must belong to the same account as its pipeline
     validations:
       presence: must not be blank
     webhook:

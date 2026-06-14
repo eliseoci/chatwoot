@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_25_093000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1241,6 +1241,34 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_093000) do
     t.index ["user_id"], name: "index_team_members_on_user_id"
   end
 
+  create_table "pipeline_stages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.string "name", null: false
+    t.integer "position", null: false
+    t.string "color", default: "#6B7280", null: false
+    t.boolean "terminal", default: false, null: false
+    t.string "outcome_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_stages_on_account_id"
+    t.index ["pipeline_id", "position"], name: "index_pipeline_stages_on_pipeline_id_and_position", unique: true
+    t.index ["pipeline_id"], name: "index_pipeline_stages_on_pipeline_id"
+    t.check_constraint "(terminal AND outcome_key IS NOT NULL) OR (NOT terminal AND outcome_key IS NULL)", name: "pipeline_stages_terminal_outcome_consistency"
+    t.check_constraint "position >= 0", name: "pipeline_stages_position_non_negative"
+  end
+
+  create_table "pipelines", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.string "template_key", default: "custom", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "name"], name: "index_pipelines_on_account_id_and_name", unique: true
+    t.index ["account_id"], name: "index_pipelines_on_account_id"
+  end
+
   create_table "teams", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
@@ -1324,6 +1352,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_093000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "pipeline_stages", "accounts"
+  add_foreign_key "pipeline_stages", "pipelines"
+  add_foreign_key "pipelines", "accounts"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

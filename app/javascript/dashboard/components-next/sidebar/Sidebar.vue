@@ -673,6 +673,13 @@ const menuItems = computed(() => {
           ],
           to: accountScopedRoute('settings_teams_list'),
         },
+        {
+          name: 'Settings Pipelines',
+          label: t('SIDEBAR.PIPELINES'),
+          icon: 'i-lucide-columns-3',
+          activeOn: ['settings_pipelines_index'],
+          to: accountScopedRoute('settings_pipelines_index'),
+        },
         ...(hasAdvancedAssignment.value
           ? [
               {
