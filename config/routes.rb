@@ -314,6 +314,7 @@ Rails.application.routes.draw do
             post :link_conversation, on: :member
             delete :unlink_conversation, on: :member
           end
+          resources :pipeline_intake_rules, only: [:index, :create, :update, :destroy]
 
           # Assignment V2 Routes
           resources :assignment_policies do

@@ -8,16 +8,16 @@
 #  updated_at       :datetime         not null
 #  account_id       :bigint           not null
 #  conversation_id  :bigint           not null
-#  linked_by_id     :bigint           not null
+#  linked_by_id     :bigint
 #  pipeline_item_id :bigint           not null
 #
 class PipelineItemConversation < ApplicationRecord
-  SOURCES = %w[api item_detail conversation_sidebar automation].freeze
+  SOURCES = %w[api item_detail conversation_sidebar automation conversation_created manual_override].freeze
 
   belongs_to :account
   belongs_to :pipeline_item, inverse_of: :conversation_links
   belongs_to :conversation
-  belongs_to :linked_by, class_name: 'User'
+  belongs_to :linked_by, class_name: 'User', optional: true
 
   validates :conversation_id, uniqueness: { scope: :pipeline_item_id }
   validates :source, presence: true, inclusion: { in: SOURCES }

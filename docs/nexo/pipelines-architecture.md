@@ -63,6 +63,11 @@ Pipelines::Items::FindOrCreateForConversation.call(...)
 ```
 
 Callers provide context. The lifecycle module owns matching and idempotency.
+Chatwoot's asynchronous `conversation_created` event is consumed by a
+Pipelines listener, which schedules a dedicated intake job. The lifecycle
+service locks the contact before matching active items so duplicate or
+concurrent delivery cannot create parallel records accidentally. Explicit
+operator intent uses the same service with deduplication bypassed.
 
 ### Pipeline Attention
 
@@ -110,6 +115,7 @@ app/models/pipeline*.rb
 app/models/pipelines/
 app/services/pipelines/
 app/jobs/pipelines/
+app/listeners/pipelines/
 app/policies/pipeline*.rb
 app/controllers/api/v1/accounts/pipeline*.rb
 app/views/api/v1/accounts/pipelines/

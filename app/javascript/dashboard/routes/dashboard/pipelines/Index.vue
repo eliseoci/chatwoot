@@ -610,9 +610,31 @@ onMounted(loadBoard);
                       })
                     }}
                   </template>
-                  <template v-else>
+                  <template v-else-if="transition.event_type === 'conversation_unlinked'">
                     {{
                       $t('PIPELINES_BOARD.TIMELINE.CONVERSATION_UNLINKED', {
+                        id: timelineConversation(transition),
+                        actor: timelineActor(transition),
+                      })
+                    }}
+                  </template>
+                  <template v-else-if="transition.event_type === 'automatic_item_created'">
+                    {{
+                      $t('PIPELINES_BOARD.TIMELINE.AUTOMATIC_ITEM_CREATED', {
+                        id: timelineConversation(transition),
+                      })
+                    }}
+                  </template>
+                  <template v-else-if="transition.event_type === 'conversation_deduplicated'">
+                    {{
+                      $t('PIPELINES_BOARD.TIMELINE.CONVERSATION_DEDUPLICATED', {
+                        id: timelineConversation(transition),
+                      })
+                    }}
+                  </template>
+                  <template v-else>
+                    {{
+                      $t('PIPELINES_BOARD.TIMELINE.PARALLEL_ITEM_CREATED', {
                         id: timelineConversation(transition),
                         actor: timelineActor(transition),
                       })

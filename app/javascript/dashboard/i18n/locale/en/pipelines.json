@@ -15,6 +15,9 @@
       "STAGE_EVENT": "{actor} moved this item from {from} to {to}.",
       "CONVERSATION_LINKED": "{actor} linked conversation #{id}.",
       "CONVERSATION_UNLINKED": "{actor} unlinked conversation #{id}.",
+      "AUTOMATIC_ITEM_CREATED": "This item was created automatically from conversation #{id}.",
+      "CONVERSATION_DEDUPLICATED": "Conversation #{id} was matched to this active item.",
+      "PARALLEL_ITEM_CREATED": "{actor} created a separate item for conversation #{id}.",
       "SYSTEM_ACTOR": "System",
       "REMOVED_CONVERSATION": "removed",
       "EMPTY": "No activity yet."

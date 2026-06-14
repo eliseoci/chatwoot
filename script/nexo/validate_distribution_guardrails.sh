@@ -61,6 +61,7 @@ pipeline_roots=(
   'app/models/pipelines/'
   'app/services/pipelines/'
   'app/jobs/pipelines/'
+  'app/listeners/pipelines/'
   'app/policies/pipeline'
   'app/controllers/api/v1/accounts/pipeline'
   'app/views/api/v1/accounts/pipeline'

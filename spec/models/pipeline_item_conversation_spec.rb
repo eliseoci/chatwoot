@@ -5,7 +5,7 @@ RSpec.describe PipelineItemConversation do
     it { is_expected.to belong_to(:account) }
     it { is_expected.to belong_to(:pipeline_item) }
     it { is_expected.to belong_to(:conversation) }
-    it { is_expected.to belong_to(:linked_by).class_name('User') }
+    it { is_expected.to belong_to(:linked_by).class_name('User').optional }
   end
 
   describe 'validations' do

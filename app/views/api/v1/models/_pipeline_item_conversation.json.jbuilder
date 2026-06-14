@@ -18,7 +18,11 @@ if conversation.assignee.present?
 else
   json.assignee nil
 end
-json.linked_by do
-  json.id resource.linked_by.id
-  json.name resource.linked_by.available_name
+if resource.linked_by.present?
+  json.linked_by do
+    json.id resource.linked_by.id
+    json.name resource.linked_by.available_name
+  end
+else
+  json.linked_by nil
 end

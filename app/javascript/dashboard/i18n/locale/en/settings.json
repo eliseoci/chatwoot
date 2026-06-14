@@ -670,10 +670,55 @@
       "EMPTY": "No pipelines yet. Create one to start organizing workflow.",
       "TERMINAL": "Outcome"
     },
+    "INTAKE": {
+      "TITLE": "Automatic intake",
+      "DESCRIPTION": "Route eligible new conversations into a pipeline without changing their conversation status.",
+      "FORM": {
+        "PIPELINE": "Pipeline",
+        "INITIAL_STAGE": "Initial stage",
+        "INBOX": "Inbox eligibility",
+        "ANY_INBOX": "Any inbox",
+        "CHANNEL": "Channel eligibility",
+        "ANY_CHANNEL": "Any channel",
+        "SUBMIT": "Create intake rule"
+      },
+      "LIST": {
+        "EMPTY": "No automatic intake rules yet.",
+        "DESTINATION": "{pipeline} · {stage}",
+        "INBOX_AND_CHANNEL": "From {inbox} when the channel is {channel}",
+        "INBOX_ONLY": "From {inbox}",
+        "CHANNEL_ONLY": "From any {channel} inbox",
+        "ALL_CONVERSATIONS": "From every inbox and channel",
+        "ACTIVE": "Active",
+        "PAUSED": "Paused",
+        "PAUSE": "Pause",
+        "RESUME": "Resume",
+        "DELETE": "Delete"
+      },
+      "CHANNEL": {
+        "API": "API",
+        "EMAIL": "Email",
+        "FACEBOOKPAGE": "Messenger",
+        "INSTAGRAM": "Instagram",
+        "LINE": "Line",
+        "SMS": "SMS",
+        "TELEGRAM": "Telegram",
+        "TIKTOK": "TikTok",
+        "TWILIOSMS": "Twilio",
+        "WEBWIDGET": "Website",
+        "WHATSAPP": "WhatsApp",
+        "OTHER": "Other channel"
+      }
+    },
     "API": {
       "LOAD_ERROR": "Pipelines could not be loaded.",
       "CREATE_SUCCESS": "Pipeline created.",
-      "CREATE_ERROR": "Pipeline could not be created."
+      "CREATE_ERROR": "Pipeline could not be created.",
+      "RULE_CREATE_SUCCESS": "Automatic intake rule created.",
+      "RULE_CREATE_ERROR": "The intake rule could not be created.",
+      "RULE_UPDATE_ERROR": "The intake rule could not be updated.",
+      "RULE_DELETE_SUCCESS": "Automatic intake rule deleted.",
+      "RULE_DELETE_ERROR": "The intake rule could not be deleted."
     }
   },
   "ASSIGNMENT_POLICY": {

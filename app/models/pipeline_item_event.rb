@@ -20,7 +20,13 @@ class PipelineItemEvent < ApplicationRecord
   belongs_to :conversation, optional: true
   belongs_to :actor, class_name: 'User', optional: true
 
-  enum :event_type, { conversation_linked: 0, conversation_unlinked: 1 }
+  enum :event_type, {
+    conversation_linked: 0,
+    conversation_unlinked: 1,
+    automatic_item_created: 2,
+    conversation_deduplicated: 3,
+    parallel_item_created: 4
+  }
 
   validates :source, presence: true, inclusion: { in: SOURCES }
   validate :associations_share_account

@@ -83,12 +83,16 @@ jobs:
             app/models/pipeline*.rb \
             app/policies/pipeline*_policy.rb \
             app/services/pipelines \
+            app/jobs/pipelines \
+            app/listeners/pipelines \
             db/migrate/*pipeline*.rb \
             spec/factories/pipeline*.rb \
             spec/models/pipeline*_spec.rb \
             spec/policies/pipeline*_policy_spec.rb \
             spec/requests/api/v1/accounts/pipeline*_spec.rb \
-            spec/services/pipelines
+            spec/services/pipelines \
+            spec/jobs/pipelines \
+            spec/listeners/pipelines
 
       - name: Run Pipelines backend specs
         run: |
@@ -96,7 +100,9 @@ jobs:
             spec/models/pipeline*_spec.rb \
             spec/policies/pipeline*_policy_spec.rb \
             spec/requests/api/v1/accounts/pipeline*_spec.rb \
-            spec/services/pipelines
+            spec/services/pipelines \
+            spec/jobs/pipelines \
+            spec/listeners/pipelines
 
   pipelines-frontend:
     runs-on: ubuntu-latest
@@ -129,7 +135,9 @@ jobs:
           pnpm exec vitest run \
             --no-cache \
             --no-coverage \
+            app/javascript/dashboard/api/specs/pipelineIntakeRules.spec.js \
             app/javascript/dashboard/api/specs/pipelineItems.spec.js \
             app/javascript/dashboard/api/specs/pipelines.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/board.spec.js \
+            app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/intakeRuleForm.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js

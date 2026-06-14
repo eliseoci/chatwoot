@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_003000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_004000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1286,7 +1286,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_003000) do
     t.bigint "account_id", null: false
     t.bigint "pipeline_item_id", null: false
     t.bigint "conversation_id", null: false
-    t.bigint "linked_by_id", null: false
+    t.bigint "linked_by_id"
     t.string "source", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -1311,7 +1311,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_003000) do
     t.index ["conversation_id"], name: "index_pipeline_item_events_on_conversation_id"
     t.index ["pipeline_item_id", "created_at"], name: "index_pipeline_item_events_on_item_and_created_at"
     t.index ["pipeline_item_id"], name: "index_pipeline_item_events_on_pipeline_item_id"
-    t.check_constraint "event_type >= 0 AND event_type <= 1", name: "pipeline_item_events_type_range"
+    t.check_constraint "event_type >= 0 AND event_type <= 4", name: "pipeline_item_events_type_range"
+  end
+
+  create_table "pipeline_intake_rules", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.bigint "initial_stage_id", null: false
+    t.bigint "inbox_id"
+    t.string "channel_type"
+    t.boolean "enabled", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "position"], name: "index_pipeline_intake_rules_on_account_id_and_position"
+    t.index ["account_id"], name: "index_pipeline_intake_rules_on_account_id"
+    t.index ["inbox_id"], name: "index_pipeline_intake_rules_on_inbox_id"
+    t.index ["initial_stage_id"], name: "index_pipeline_intake_rules_on_initial_stage_id"
+    t.index ["pipeline_id"], name: "index_pipeline_intake_rules_on_pipeline_id"
+    t.check_constraint "position >= 0", name: "pipeline_intake_rules_position_non_negative"
   end
 
   create_table "pipeline_item_stage_transitions", force: :cascade do |t|
@@ -1433,6 +1451,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_003000) do
   add_foreign_key "pipeline_item_events", "conversations", on_delete: :nullify
   add_foreign_key "pipeline_item_events", "pipeline_items"
   add_foreign_key "pipeline_item_events", "users", column: "actor_id", on_delete: :nullify
+  add_foreign_key "pipeline_intake_rules", "accounts"
+  add_foreign_key "pipeline_intake_rules", "inboxes", on_delete: :cascade
+  add_foreign_key "pipeline_intake_rules", "pipeline_stages", column: "initial_stage_id"
+  add_foreign_key "pipeline_intake_rules", "pipelines"
   add_foreign_key "pipeline_items", "accounts"
   add_foreign_key "pipeline_items", "contacts", on_delete: :cascade
   add_foreign_key "pipeline_items", "pipeline_stages", column: "stage_id"
