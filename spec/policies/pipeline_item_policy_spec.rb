@@ -19,6 +19,7 @@ RSpec.describe PipelineItemPolicy, type: :policy do
               :create?,
               :timeline?,
               :transition?,
+              :ownership?,
               :linked_conversations?,
               :link_conversation?,
               :unlink_conversation? do

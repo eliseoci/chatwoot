@@ -127,6 +127,9 @@ jobs:
           pnpm exec eslint \
             app/javascript/dashboard/api/pipeline*.js \
             app/javascript/dashboard/api/specs/pipeline*.spec.js \
+            app/javascript/dashboard/components/widgets/conversation/pipelines \
+            app/javascript/dashboard/composables/useUISettings.js \
+            app/javascript/dashboard/routes/dashboard/conversation/ContactPanel.vue \
             app/javascript/dashboard/routes/dashboard/pipelines \
             app/javascript/dashboard/routes/dashboard/settings/pipelines
 
@@ -139,6 +142,7 @@ jobs:
             app/javascript/dashboard/api/specs/pipelineActivities.spec.js \
             app/javascript/dashboard/api/specs/pipelineItems.spec.js \
             app/javascript/dashboard/api/specs/pipelines.spec.js \
+            app/javascript/dashboard/components/widgets/conversation/pipelines/specs/PipelineItemsList.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/activities.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/board.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/intakeRuleForm.spec.js \

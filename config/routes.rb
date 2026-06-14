@@ -316,6 +316,7 @@ Rails.application.routes.draw do
             end
             get :timeline, on: :member
             patch :transition, on: :member
+            patch :ownership, on: :member
             get :linked_conversations, on: :member
             post :link_conversation, on: :member
             delete :unlink_conversation, on: :member

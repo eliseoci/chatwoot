@@ -14,6 +14,7 @@ export const buildPipelineItemPayload = ({
   priority,
   value,
   dueDate,
+  conversationId,
 }) => {
   const pipelineItem = {
     pipeline_id: pipelineId,
@@ -27,6 +28,7 @@ export const buildPipelineItemPayload = ({
   if (priority) pipelineItem.priority = priority;
   if (value !== '') pipelineItem.value = Number(value);
   if (dueDate) pipelineItem.due_date = dueDate;
+  if (conversationId) pipelineItem.conversation_id = conversationId;
 
   return { pipeline_item: pipelineItem };
 };

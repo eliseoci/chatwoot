@@ -6,14 +6,27 @@ class PipelineItemsAPI extends ApiClient {
     super('pipeline_items', { accountScoped: true });
   }
 
-  get({ pipelineId }) {
-    return axios.get(this.url, { params: { pipeline_id: pipelineId } });
+  get({ pipelineId, contactId, conversationId } = {}) {
+    const params = {};
+    if (pipelineId) params.pipeline_id = pipelineId;
+    if (contactId) params.contact_id = contactId;
+    if (conversationId) params.conversation_id = conversationId;
+    return axios.get(this.url, { params });
   }
 
   transition(id, { stageId, source }) {
     return axios.patch(`${this.url}/${id}/transition`, {
       transition: {
         stage_id: stageId,
+        source,
+      },
+    });
+  }
+
+  updateOwnership(id, { ownerId, source }) {
+    return axios.patch(`${this.url}/${id}/ownership`, {
+      ownership: {
+        owner_id: ownerId,
         source,
       },
     });

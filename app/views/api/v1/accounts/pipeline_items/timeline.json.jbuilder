@@ -35,6 +35,20 @@ json.array! timeline_entries do |entry|
     else
       json.activity nil
     end
+    if entry.ownership_changed?
+      json.ownership do
+        json.from_owner do
+          json.id entry.metadata['from_owner_id']
+          json.name entry.metadata['from_owner_name']
+        end
+        json.to_owner do
+          json.id entry.metadata['to_owner_id']
+          json.name entry.metadata['to_owner_name']
+        end
+      end
+    else
+      json.ownership nil
+    end
   end
 
   if entry.actor.present?

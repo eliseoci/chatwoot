@@ -31,6 +31,7 @@ describe('#buildPipelineItemPayload', () => {
         priority: '',
         value: '',
         dueDate: '',
+        conversationId: '',
       })
     ).toEqual({
       pipeline_item: {
@@ -53,6 +54,7 @@ describe('#buildPipelineItemPayload', () => {
         priority: 'high',
         value: '2500.50',
         dueDate: '2026-06-30',
+        conversationId: 12,
       })
     ).toEqual({
       pipeline_item: {
@@ -65,6 +67,7 @@ describe('#buildPipelineItemPayload', () => {
         priority: 'high',
         value: 2500.5,
         due_date: '2026-06-30',
+        conversation_id: 12,
       },
     });
   });

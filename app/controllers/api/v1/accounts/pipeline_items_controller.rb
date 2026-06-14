@@ -1,11 +1,21 @@
 class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseController
   before_action :fetch_pipeline_item,
-                only: [:show, :timeline, :transition, :linked_conversations, :link_conversation, :unlink_conversation]
+                only: [
+                  :show,
+                  :timeline,
+                  :transition,
+                  :ownership,
+                  :linked_conversations,
+                  :link_conversation,
+                  :unlink_conversation
+                ]
   before_action :check_authorization
 
   def index
     @pipeline_items = pipeline_items_scope
     @pipeline_items = @pipeline_items.where(pipeline: fetch_pipeline) if params[:pipeline_id].present?
+    @pipeline_items = @pipeline_items.where(contact: fetch_contact) if params[:contact_id].present?
+    @pipeline_items = filter_by_conversation(@pipeline_items) if params[:conversation_id].present?
   end
 
   def show
@@ -23,9 +33,12 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
   end
 
   def create
-    @pipeline_item = Current.account.pipeline_items.new(pipeline_item_attributes)
-    assign_account_scoped_associations
-    @pipeline_item.save!
+    ActiveRecord::Base.transaction do
+      @pipeline_item = Current.account.pipeline_items.new(pipeline_item_attributes)
+      assign_account_scoped_associations
+      @pipeline_item.save!
+      link_create_conversation if params.dig(:pipeline_item, :conversation_id).present?
+    end
   end
 
   def transition
@@ -34,6 +47,15 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
       target_stage_id: transition_params[:stage_id],
       actor: Current.user,
       source: transition_params[:source].presence || 'api'
+    ).perform
+  end
+
+  def ownership
+    @pipeline_item = Pipelines::Items::UpdateOwnershipService.new(
+      pipeline_item: @pipeline_item,
+      owner: fetch_owner,
+      actor: Current.user,
+      source: ownership_params[:source].presence || 'api'
     ).perform
   end
 
@@ -78,8 +100,28 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
     Current.account.pipelines.find(params[:pipeline_id].presence || params.dig(:pipeline_item, :pipeline_id))
   end
 
+  def fetch_contact
+    Current.account.contacts.find(params[:contact_id])
+  end
+
+  def filter_by_conversation(scope)
+    conversation = Current.account.conversations.find_by!(display_id: params[:conversation_id])
+    authorize conversation, :show?
+    scope.joins(:conversation_links)
+         .where(pipeline_item_conversations: { conversation_id: conversation.id })
+         .distinct
+  end
+
   def fetch_conversation
     conversation = Current.account.conversations.find_by!(display_id: conversation_params[:conversation_id])
+    authorize conversation, :show?
+    conversation
+  end
+
+  def fetch_create_conversation
+    conversation = Current.account.conversations.find_by!(
+      display_id: params.dig(:pipeline_item, :conversation_id)
+    )
     authorize conversation, :show?
     conversation
   end
@@ -107,6 +149,20 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
     @pipeline_item.owner = Current.account.users.find(owner_id) if owner_id.present?
   end
 
+  def fetch_owner
+    owner_id = ownership_params[:owner_id]
+    Current.account.users.find(owner_id) if owner_id.present?
+  end
+
+  def link_create_conversation
+    Pipelines::Items::LinkConversationService.new(
+      pipeline_item: @pipeline_item,
+      conversation: fetch_create_conversation,
+      actor: Current.user,
+      source: 'conversation_sidebar'
+    ).perform
+  end
+
   def assign_team
     team_id = params.dig(:pipeline_item, :team_id)
     @pipeline_item.team = Current.account.teams.find(team_id) if team_id.present?
@@ -114,6 +170,10 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def pipeline_item_attributes
     params.require(:pipeline_item).permit(:title, :priority, :value, :due_date)
+  end
+
+  def ownership_params
+    params.require(:ownership).permit(:owner_id, :source)
   end
 
   def transition_params

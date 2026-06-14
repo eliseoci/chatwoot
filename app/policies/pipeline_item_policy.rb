@@ -19,6 +19,10 @@ class PipelineItemPolicy < ApplicationPolicy
     true
   end
 
+  def ownership?
+    true
+  end
+
   def linked_conversations?
     true
   end

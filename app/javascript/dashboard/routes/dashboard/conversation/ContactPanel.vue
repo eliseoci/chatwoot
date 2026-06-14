@@ -24,6 +24,7 @@ import ShopifyOrdersList from 'dashboard/components/widgets/conversation/Shopify
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
 import LinearIssuesList from 'dashboard/components/widgets/conversation/linear/IssuesList.vue';
 import LinearSetupCTA from 'dashboard/components/widgets/conversation/linear/LinearSetupCTA.vue';
+import PipelineItemsList from 'dashboard/components/widgets/conversation/pipelines/PipelineItemsList.vue';
 
 const props = defineProps({
   conversationId: {
@@ -164,6 +165,24 @@ onMounted(() => {
               <ConversationAction
                 :conversation-id="conversationId"
                 :inbox-id="inboxId"
+              />
+            </AccordionItem>
+          </div>
+          <div
+            v-else-if="element.name === 'pipeline_items' && contactId"
+            class="conversation--actions"
+          >
+            <AccordionItem
+              :title="$t('CONVERSATION_SIDEBAR.ACCORDION.PIPELINE_ITEMS')"
+              :is-open="isContactSidebarItemOpen('is_pipeline_items_open')"
+              compact
+              @toggle="
+                value => toggleSidebarUIState('is_pipeline_items_open', value)
+              "
+            >
+              <PipelineItemsList
+                :conversation-id="conversationId"
+                :contact-id="contactId"
               />
             </AccordionItem>
           </div>

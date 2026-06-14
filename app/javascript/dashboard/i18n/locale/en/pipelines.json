@@ -22,6 +22,7 @@
       "ACTIVITY_UPDATED": "{actor} updated “{title}”.",
       "ACTIVITY_COMPLETED": "{actor} completed “{title}”.",
       "ACTIVITY_CANCELED": "{actor} canceled “{title}”.",
+      "OWNERSHIP_CHANGED": "{actor} changed ownership from {from} to {to}.",
       "SYSTEM_ACTOR": "System",
       "REMOVED_CONVERSATION": "removed",
       "EMPTY": "No activity yet."
@@ -161,6 +162,51 @@
       "ACTIVITY_COMPLETE_SUCCESS": "Activity completed.",
       "ACTIVITY_CANCEL_SUCCESS": "Activity canceled.",
       "ACTIVITY_STATUS_ERROR": "The activity status could not be changed."
+    }
+  },
+  "PIPELINES_SIDEBAR": {
+    "CREATE_ACTION": "Create pipeline item",
+    "EMPTY": "No pipeline items are linked to this conversation.",
+    "NO_PIPELINES": "No pipeline is available for this account.",
+    "STATUS_SEPARATION": "Pipeline stage tracks business progress separately from conversation status.",
+    "PERMISSION_DENIED": "You do not have permission to view or manage pipeline items.",
+    "LOAD_ERROR": "Pipeline items could not be loaded.",
+    "RETRY": "Retry",
+    "PIPELINE_STAGE": "{pipeline} · {stage}",
+    "STAGE_LABEL": "Pipeline stage",
+    "OWNER_LABEL": "Owner",
+    "UNASSIGNED": "Unassigned",
+    "NEXT_ACTIVITY": "Due {date}",
+    "ACTIVITY_ACTION": "Schedule next activity",
+    "UNLINK": "Unlink conversation",
+    "LINK_TITLE": "Other items for this contact",
+    "LINK": "Link",
+    "CANCEL": "Cancel",
+    "FORM": {
+      "PIPELINE": "Pipeline",
+      "STAGE": "Starting stage",
+      "TITLE": "Item title",
+      "TITLE_PLACEHOLDER": "Optional business objective",
+      "OWNER": "Owner",
+      "CREATE": "Create and link"
+    },
+    "ACTIVITY": {
+      "TITLE": "What needs to happen?",
+      "TITLE_PLACEHOLDER": "Follow up with the customer",
+      "DUE_AT": "Due date and time",
+      "SCHEDULE": "Schedule"
+    },
+    "API": {
+      "CREATE_SUCCESS": "Pipeline item created and linked.",
+      "CREATE_ERROR": "The pipeline item could not be created.",
+      "LINK_SUCCESS": "Pipeline item linked.",
+      "LINK_ERROR": "The pipeline item could not be linked.",
+      "UNLINK_SUCCESS": "Pipeline item unlinked.",
+      "UNLINK_ERROR": "The pipeline item could not be unlinked.",
+      "STAGE_ERROR": "The pipeline stage could not be changed.",
+      "OWNER_ERROR": "The pipeline owner could not be changed.",
+      "ACTIVITY_SUCCESS": "Next activity scheduled.",
+      "ACTIVITY_ERROR": "The next activity could not be scheduled."
     }
   }
 }

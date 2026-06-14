@@ -65,6 +65,50 @@ RSpec.describe 'Pipeline Items API', type: :request do
       expect(response).to have_http_status(:not_found)
       expect(PipelineItem.exists?).to be(false)
     end
+
+    it 'creates and links an item from the current conversation atomically' do
+      conversation = create(:conversation, account: account, contact: contact)
+      create(:inbox_member, user: agent, inbox: conversation.inbox)
+
+      expect do
+        post "/api/v1/accounts/#{account.id}/pipeline_items",
+             params: {
+               pipeline_item: {
+                 pipeline_id: pipeline.id,
+                 stage_id: pipeline.stages.first.id,
+                 contact_id: contact.id,
+                 conversation_id: conversation.display_id
+               }
+             },
+             headers: agent.create_new_auth_token,
+             as: :json
+      end.to change(account.pipeline_items, :count).by(1)
+                                                   .and change(PipelineItemConversation, :count).by(1)
+
+      expect(response).to have_http_status(:success)
+      expect(account.pipeline_items.last.linked_conversations).to contain_exactly(conversation)
+    end
+
+    it 'rolls back an item when the conversation belongs to another contact' do
+      conversation = create(:conversation, account: account)
+      create(:inbox_member, user: agent, inbox: conversation.inbox)
+
+      expect do
+        post "/api/v1/accounts/#{account.id}/pipeline_items",
+             params: {
+               pipeline_item: {
+                 pipeline_id: pipeline.id,
+                 stage_id: pipeline.stages.first.id,
+                 contact_id: contact.id,
+                 conversation_id: conversation.display_id
+               }
+             },
+             headers: agent.create_new_auth_token,
+             as: :json
+      end.not_to change(account.pipeline_items, :count)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
   end
 
   describe 'GET /api/v1/accounts/:account_id/pipeline_items' do
@@ -79,6 +123,38 @@ RSpec.describe 'Pipeline Items API', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.parsed_body.pluck('id')).to eq([item.id])
+    end
+
+    it 'filters contact-compatible and conversation-linked items for the sidebar' do
+      linked_item = create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: pipeline.stages.first,
+        contact: contact
+      )
+      compatible_item = create(:pipeline_item, account: account, contact: contact)
+      conversation = create(:conversation, account: account, contact: contact)
+      create(:inbox_member, user: agent, inbox: conversation.inbox)
+      create(
+        :pipeline_item_conversation,
+        account: account,
+        pipeline_item: linked_item,
+        conversation: conversation,
+        linked_by: agent
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items",
+          params: { contact_id: contact.id },
+          headers: agent.create_new_auth_token,
+          as: :json
+      expect(response.parsed_body.pluck('id')).to contain_exactly(linked_item.id, compatible_item.id)
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items",
+          params: { conversation_id: conversation.display_id },
+          headers: agent.create_new_auth_token,
+          as: :json
+      expect(response.parsed_body.pluck('id')).to eq([linked_item.id])
     end
   end
 
@@ -289,6 +365,21 @@ RSpec.describe 'Pipeline Items API', type: :request do
       expect(item.stage_transitions.last).to have_attributes(actor: agent, source: 'board_command')
     end
 
+    it 'moves the item from the conversation sidebar' do
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/transition",
+            params: {
+              transition: {
+                stage_id: pipeline.stages.second.id,
+                source: 'conversation_sidebar'
+              }
+            },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(item.stage_transitions.last.source).to eq('conversation_sidebar')
+    end
+
     it 'rejects a stage from another pipeline' do
       patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/transition",
             params: {
@@ -302,6 +393,53 @@ RSpec.describe 'Pipeline Items API', type: :request do
 
       expect(response).to have_http_status(:not_found)
       expect(item.reload.stage).to eq(pipeline.stages.first)
+    end
+  end
+
+  describe 'PATCH /api/v1/accounts/:account_id/pipeline_items/:id/ownership' do
+    let(:item) do
+      create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+    end
+
+    it 'assigns and clears an account owner through the ownership service' do
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/ownership",
+            params: {
+              ownership: {
+                owner_id: agent.id,
+                source: 'conversation_sidebar'
+              }
+            },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.dig('owner', 'id')).to eq(agent.id)
+      expect(item.events.last.event_type).to eq('ownership_changed')
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/timeline",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response.parsed_body.first).to include('event_type' => 'ownership_changed')
+      expect(response.parsed_body.first.dig('ownership', 'to_owner', 'name')).to eq(agent.available_name)
+
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/ownership",
+            params: { ownership: { owner_id: nil, source: 'conversation_sidebar' } },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['owner']).to be_nil
+    end
+
+    it 'rejects an owner from another account' do
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/ownership",
+            params: { ownership: { owner_id: create(:user).id } },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(item.reload.owner).to be_nil
     end
   end
 

@@ -22,6 +22,44 @@ describe('#PipelineItemsAPI', () => {
     window.axios = originalAxios;
   });
 
+  it('filters items by contact or linked conversation', () => {
+    const originalAxios = window.axios;
+    const axiosMock = { get: vi.fn(() => Promise.resolve()) };
+    window.axios = axiosMock;
+
+    pipelineItemsAPI.get({ contactId: 8, conversationId: 12 });
+
+    expect(axiosMock.get).toHaveBeenCalledWith(pipelineItemsAPI.url, {
+      params: {
+        contact_id: 8,
+        conversation_id: 12,
+      },
+    });
+    window.axios = originalAxios;
+  });
+
+  it('updates item ownership', () => {
+    const originalAxios = window.axios;
+    const axiosMock = { patch: vi.fn(() => Promise.resolve()) };
+    window.axios = axiosMock;
+
+    pipelineItemsAPI.updateOwnership(4, {
+      ownerId: 9,
+      source: 'conversation_sidebar',
+    });
+
+    expect(axiosMock.patch).toHaveBeenCalledWith(
+      `${pipelineItemsAPI.url}/4/ownership`,
+      {
+        ownership: {
+          owner_id: 9,
+          source: 'conversation_sidebar',
+        },
+      }
+    );
+    window.axios = originalAxios;
+  });
+
   it('moves an item through the transition endpoint', () => {
     const originalAxios = window.axios;
     const axiosMock = { patch: vi.fn(() => Promise.resolve()) };

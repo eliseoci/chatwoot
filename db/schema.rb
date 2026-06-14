@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_005000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_006000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1338,7 +1338,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_005000) do
     t.index ["pipeline_item_id", "created_at"], name: "index_pipeline_item_events_on_item_and_created_at"
     t.index ["pipeline_item_id"], name: "index_pipeline_item_events_on_pipeline_item_id"
     t.index ["pipeline_activity_id"], name: "index_pipeline_item_events_on_pipeline_activity_id"
-    t.check_constraint "event_type >= 0 AND event_type <= 8", name: "pipeline_item_events_type_range"
+    t.check_constraint "event_type >= 0 AND event_type <= 9", name: "pipeline_item_events_type_range"
   end
 
   create_table "pipeline_intake_rules", force: :cascade do |t|

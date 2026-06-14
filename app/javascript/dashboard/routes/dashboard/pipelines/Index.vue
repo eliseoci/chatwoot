@@ -806,6 +806,19 @@ onMounted(loadBoard);
                       })
                     }}
                   </template>
+                  <template v-else-if="transition.event_type === 'ownership_changed'">
+                    {{
+                      $t('PIPELINES_BOARD.TIMELINE.OWNERSHIP_CHANGED', {
+                        actor: timelineActor(transition),
+                        from:
+                          transition.ownership?.from_owner?.name ||
+                          $t('PIPELINES_BOARD.FORM.UNASSIGNED'),
+                        to:
+                          transition.ownership?.to_owner?.name ||
+                          $t('PIPELINES_BOARD.FORM.UNASSIGNED'),
+                      })
+                    }}
+                  </template>
                   <template v-else>
                     {{
                       $t(

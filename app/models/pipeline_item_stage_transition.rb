@@ -13,7 +13,7 @@
 #  to_stage_id      :bigint           not null
 #
 class PipelineItemStageTransition < ApplicationRecord
-  SOURCES = %w[api board_drag board_command].freeze
+  SOURCES = %w[api board_drag board_command conversation_sidebar].freeze
 
   belongs_to :account
   belongs_to :pipeline_item, inverse_of: :stage_transitions
