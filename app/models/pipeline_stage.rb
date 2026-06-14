@@ -15,7 +15,7 @@
 #
 class PipelineStage < ApplicationRecord
   belongs_to :account
-  belongs_to :pipeline
+  belongs_to :pipeline, inverse_of: :stages
 
   validates :name, presence: true
   validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 },

@@ -51,7 +51,7 @@ RSpec.describe 'Pipelines API', type: :request do
              headers: administrator.create_new_auth_token,
              as: :json
       end.to change(account.pipelines, :count).by(1)
-        .and change(PipelineStage, :count).by(5)
+         .and change(PipelineStage, :count).by(5)
 
       expect(response).to have_http_status(:success)
       expect(response.parsed_body['name']).to eq('Sales')

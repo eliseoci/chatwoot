@@ -1,8 +1,7 @@
-module Pipelines
-  class Templates
-    DEFAULT_COLOR = '#6B7280'.freeze
+class Pipelines::Templates
+  DEFAULT_COLOR = '#6B7280'.freeze
 
-    DEFINITIONS = {
+  DEFINITIONS = {
       'sales' => {
         stages: [
           { key: 'new_lead' },
@@ -57,38 +56,37 @@ module Pipelines
         ]
       },
       'custom' => { stages: [] }
-    }.freeze
+  }.freeze
 
-    class << self
-      def all
-        DEFINITIONS.map { |key, definition| serialize(key, definition) }
-      end
+  class << self
+    def all
+      DEFINITIONS.map { |key, definition| serialize(key, definition) }
+    end
 
-      def fetch(key)
-        definition = DEFINITIONS[key.to_s]
-        return if definition.blank?
+    def fetch(key)
+      definition = DEFINITIONS[key.to_s]
+      return if definition.blank?
 
-        serialize(key.to_s, definition)
-      end
+      serialize(key.to_s, definition)
+    end
 
-      private
+    private
 
-      def serialize(key, definition)
-        {
-          key: key,
-          name: I18n.t("pipeline_templates.#{key}.name"),
-          description: I18n.t("pipeline_templates.#{key}.description"),
-          stages: definition[:stages].map.with_index do |stage, position|
-            {
-              name: I18n.t("pipeline_templates.#{key}.stages.#{stage[:key]}"),
-              position: position,
-              color: DEFAULT_COLOR,
-              terminal: stage.fetch(:terminal, false),
-              outcome_key: stage[:outcome_key]
-            }
-          end
-        }
-      end
+    def serialize(key, definition)
+      {
+        key: key,
+        name: I18n.t("pipeline_templates.#{key}.name"),
+        description: I18n.t("pipeline_templates.#{key}.description"),
+        stages: definition[:stages].map.with_index do |stage, position|
+          {
+            name: I18n.t("pipeline_templates.#{key}.stages.#{stage[:key]}"),
+            position: position,
+            color: DEFAULT_COLOR,
+            terminal: stage.fetch(:terminal, false),
+            outcome_key: stage[:outcome_key]
+          }
+        end
+      }
     end
   end
 end

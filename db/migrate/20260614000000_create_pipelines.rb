@@ -1,5 +1,12 @@
 class CreatePipelines < ActiveRecord::Migration[7.1]
   def change
+    create_pipelines_table
+    create_pipeline_stages_table
+  end
+
+  private
+
+  def create_pipelines_table
     create_table :pipelines do |t|
       t.references :account, null: false, foreign_key: true
       t.string :name, null: false
@@ -10,7 +17,9 @@ class CreatePipelines < ActiveRecord::Migration[7.1]
     end
 
     add_index :pipelines, [:account_id, :name], unique: true
+  end
 
+  def create_pipeline_stages_table
     create_table :pipeline_stages do |t|
       t.references :account, null: false, foreign_key: true
       t.references :pipeline, null: false, foreign_key: true
