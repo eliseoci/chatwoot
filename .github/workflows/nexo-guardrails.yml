@@ -1,0 +1,32 @@
+name: Nexo distribution guardrails
+
+on:
+  pull_request:
+  push:
+    branches:
+      - codex/chatwoot-pipelines
+      - 'release/nexo-*'
+    tags:
+      - 'v*-nexo.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution-guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate shell syntax
+        run: bash -n script/nexo/validate_distribution_guardrails.sh
+
+      - name: Validate version and license boundaries
+        env:
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: script/nexo/validate_distribution_guardrails.sh
