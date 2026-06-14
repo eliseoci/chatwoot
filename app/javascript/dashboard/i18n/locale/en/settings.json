@@ -670,6 +670,53 @@
       "EMPTY": "No pipelines yet. Create one to start organizing workflow.",
       "TERMINAL": "Outcome"
     },
+    "FIELDS": {
+      "TITLE": "Pipeline fields",
+      "DESCRIPTION": "Capture the business details this workflow needs and require them at the right stage.",
+      "EMPTY": "No custom fields yet.",
+      "TYPES": {
+        "TEXT": "Text",
+        "NUMBER": "Number",
+        "CURRENCY": "Currency",
+        "DATE": "Date",
+        "BOOLEAN": "Yes or no",
+        "LIST": "List",
+        "LINK": "Link",
+        "USER_REFERENCE": "Team member"
+      },
+      "FORM": {
+        "LABEL": "Field label",
+        "LABEL_PLACEHOLDER": "For example, Contract value",
+        "TYPE": "Field type",
+        "CHOICES": "List choices",
+        "CHOICES_PLACEHOLDER": "Enter one choice per line",
+        "CURRENCY": "Currency code",
+        "CURRENCY_PLACEHOLDER": "USD",
+        "ADD": "Add field"
+      },
+      "ACTIONS": {
+        "SAVE": "Save field",
+        "CANCEL": "Cancel",
+        "EDIT": "Edit field",
+        "ARCHIVE": "Archive field",
+        "MOVE_UP": "Move field up",
+        "MOVE_DOWN": "Move field down"
+      },
+      "REQUIREMENTS": {
+        "TITLE": "Required before entering a stage",
+        "DESCRIPTION": "Select the fields that must be completed before an item can move into each stage."
+      },
+      "API": {
+        "CREATE_SUCCESS": "Pipeline field added.",
+        "CREATE_ERROR": "The pipeline field could not be added.",
+        "UPDATE_SUCCESS": "Pipeline field updated.",
+        "UPDATE_ERROR": "The pipeline field could not be updated.",
+        "ARCHIVE_SUCCESS": "Pipeline field archived.",
+        "ARCHIVE_ERROR": "The pipeline field could not be archived.",
+        "REORDER_ERROR": "The field order could not be saved.",
+        "REQUIREMENTS_ERROR": "The stage requirements could not be saved."
+      }
+    },
     "INTAKE": {
       "TITLE": "Automatic intake",
       "DESCRIPTION": "Route eligible new conversations into a pipeline without changing their conversation status.",

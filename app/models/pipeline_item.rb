@@ -4,6 +4,7 @@
 #
 #  id          :bigint           not null, primary key
 #  due_date    :date
+#  field_values :jsonb            not null
 #  priority    :integer
 #  title       :string
 #  value       :decimal(15, 2)

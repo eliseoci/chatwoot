@@ -93,6 +93,28 @@ describe('#PipelineItemsAPI', () => {
     window.axios = originalAxios;
   });
 
+  it('updates item-owned custom field values', () => {
+    const originalAxios = window.axios;
+    const axiosMock = { patch: vi.fn(() => Promise.resolve()) };
+    window.axios = axiosMock;
+
+    pipelineItemsAPI.updateFieldValues(4, {
+      fieldValues: { budget: '1200.50', approved: false },
+      source: 'item_detail',
+    });
+
+    expect(axiosMock.patch).toHaveBeenCalledWith(
+      `${pipelineItemsAPI.url}/4/field_values`,
+      {
+        pipeline_item: {
+          field_values: { budget: '1200.50', approved: false },
+          source: 'item_detail',
+        },
+      }
+    );
+    window.axios = originalAxios;
+  });
+
   it('moves an item through the transition endpoint', () => {
     const originalAxios = window.axios;
     const axiosMock = { patch: vi.fn(() => Promise.resolve()) };

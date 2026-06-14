@@ -20,6 +20,11 @@ class Pipeline < ApplicationRecord
            inverse_of: :pipeline,
            dependent: :destroy
   has_many :items, class_name: 'PipelineItem', inverse_of: :pipeline, dependent: :destroy
+  has_many :field_definitions,
+           -> { ordered },
+           class_name: 'PipelineFieldDefinition',
+           inverse_of: :pipeline,
+           dependent: :destroy
   has_many :intake_rules,
            class_name: 'PipelineIntakeRule',
            inverse_of: :pipeline,

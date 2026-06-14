@@ -3,7 +3,6 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
                 only: [
                   :show,
                   :timeline,
-                  :transition,
                   :ownership,
                   :linked_conversations,
                   :link_conversation,
@@ -44,15 +43,6 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
       @pipeline_item.save!
       link_create_conversation if params.dig(:pipeline_item, :conversation_id).present?
     end
-  end
-
-  def transition
-    @pipeline_item = Pipelines::Items::TransitionStageService.new(
-      pipeline_item: @pipeline_item,
-      target_stage_id: transition_params[:stage_id],
-      actor: Current.user,
-      source: transition_params[:source].presence || 'api'
-    ).perform
   end
 
   def ownership
@@ -192,10 +182,6 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def ownership_params
     params.require(:ownership).permit(:owner_id, :source)
-  end
-
-  def transition_params
-    params.require(:transition).permit(:stage_id, :source)
   end
 
   def conversation_params

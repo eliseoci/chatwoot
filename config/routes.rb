@@ -306,8 +306,20 @@ Rails.application.routes.draw do
 
           resources :pipelines, only: [:index, :show, :create] do
             get :templates, on: :collection
+            resources :field_definitions,
+                      controller: 'pipeline_field_definitions',
+                      only: [:index, :create, :update, :destroy] do
+              patch :reorder, on: :collection
+            end
+            resources :stages, controller: 'pipeline_stages', only: [:update]
           end
           resources :pipeline_items, only: [:index, :show, :create] do
+            resource :field_values,
+                     controller: 'pipeline_item_field_values',
+                     only: [:update]
+            resource :transition,
+                     controller: 'pipeline_item_transitions',
+                     only: [:update]
             resources :activities,
                       controller: 'pipeline_activities',
                       only: [:index, :create, :update] do
@@ -315,7 +327,6 @@ Rails.application.routes.draw do
               patch :cancel, on: :member
             end
             get :timeline, on: :member
-            patch :transition, on: :member
             patch :ownership, on: :member
             get :linked_conversations, on: :member
             post :link_conversation, on: :member

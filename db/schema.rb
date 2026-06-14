@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_006000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_007000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1241,6 +1241,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_006000) do
     t.index ["user_id"], name: "index_team_members_on_user_id"
   end
 
+  create_table "pipeline_field_definitions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.string "key", null: false
+    t.string "label", null: false
+    t.integer "field_type", null: false
+    t.integer "position", default: 0, null: false
+    t.jsonb "settings", default: {}, null: false
+    t.datetime "archived_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_field_definitions_on_account_id"
+    t.index ["pipeline_id", "archived_at", "position"], name: "index_pipeline_fields_on_pipeline_archive_position"
+    t.index ["pipeline_id", "key"], name: "index_pipeline_field_definitions_on_pipeline_id_and_key", unique: true
+    t.index ["pipeline_id"], name: "index_pipeline_field_definitions_on_pipeline_id"
+    t.check_constraint "field_type >= 0 AND field_type <= 7", name: "pipeline_field_definitions_type_range"
+    t.check_constraint "position >= 0", name: "pipeline_field_definitions_position_non_negative"
+  end
+
   create_table "pipeline_stages", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "pipeline_id", null: false
@@ -1249,6 +1268,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_006000) do
     t.string "color", default: "#6B7280", null: false
     t.boolean "terminal", default: false, null: false
     t.string "outcome_key"
+    t.string "required_field_keys", default: [], null: false, array: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_pipeline_stages_on_account_id"
@@ -1293,6 +1313,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_006000) do
     t.integer "priority"
     t.decimal "value", precision: 15, scale: 2
     t.date "due_date"
+    t.jsonb "field_values", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_pipeline_items_on_account_id"
@@ -1338,7 +1359,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_006000) do
     t.index ["pipeline_item_id", "created_at"], name: "index_pipeline_item_events_on_item_and_created_at"
     t.index ["pipeline_item_id"], name: "index_pipeline_item_events_on_pipeline_item_id"
     t.index ["pipeline_activity_id"], name: "index_pipeline_item_events_on_pipeline_activity_id"
-    t.check_constraint "event_type >= 0 AND event_type <= 9", name: "pipeline_item_events_type_range"
+    t.check_constraint "event_type >= 0 AND event_type <= 10", name: "pipeline_item_events_type_range"
   end
 
   create_table "pipeline_intake_rules", force: :cascade do |t|
@@ -1470,6 +1491,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_006000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "pipeline_field_definitions", "accounts"
+  add_foreign_key "pipeline_field_definitions", "pipelines"
   add_foreign_key "pipeline_activities", "accounts"
   add_foreign_key "pipeline_activities", "pipeline_items"
   add_foreign_key "pipeline_activities", "users", column: "assignee_id", on_delete: :nullify

@@ -33,7 +33,8 @@ class PipelineItemEvent < ApplicationRecord
     activity_updated: 6,
     activity_completed: 7,
     activity_canceled: 8,
-    ownership_changed: 9
+    ownership_changed: 9,
+    field_values_updated: 10
   }
 
   validates :source, presence: true, inclusion: { in: SOURCES }

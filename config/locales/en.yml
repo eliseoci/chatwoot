@@ -115,6 +115,14 @@ en:
     pipeline_item:
       account_mismatch: must belong to the same account as the pipeline item
       stage_mismatch: must belong to the selected pipeline
+      missing_required_fields: Complete the required fields before moving this item.
+      unknown_fields: "contains unavailable fields: %{keys}"
+      invalid_field_value: "contains an invalid value for %{label}"
+    pipeline_field_definition:
+      account_mismatch: must belong to the same account as its pipeline
+      list_choices: must contain unique list choices
+      currency_code: must contain a three-letter currency code
+      type_immutable: cannot be changed after the field is created
     pipeline_item_conversation:
       account_mismatch: must belong to the same account as the pipeline item
       contact_mismatch: must belong to the pipeline item's contact
@@ -131,6 +139,7 @@ en:
       mismatch: must belong to the same account and pipeline as the item
     pipeline_stage:
       account_mismatch: must belong to the same account as its pipeline
+      invalid_required_fields: must reference active fields in the same pipeline
     validations:
       presence: must not be blank
     webhook:

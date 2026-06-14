@@ -52,6 +52,15 @@ class PipelineItemsAPI extends ApiClient {
     });
   }
 
+  updateFieldValues(id, { fieldValues, source }) {
+    return axios.patch(`${this.url}/${id}/field_values`, {
+      pipeline_item: {
+        field_values: fieldValues,
+        source,
+      },
+    });
+  }
+
   timeline(id) {
     return axios.get(`${this.url}/${id}/timeline`);
   }

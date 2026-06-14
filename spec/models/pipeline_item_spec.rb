@@ -24,6 +24,10 @@ RSpec.describe PipelineItem do
 
     it { is_expected.to validate_numericality_of(:value).is_greater_than_or_equal_to(0).allow_nil }
 
+    it 'allows an empty custom field value map' do
+      expect(build_pipeline_item(field_values: {})).to be_valid
+    end
+
     it 'rejects a pipeline from another account' do
       item = build_pipeline_item(pipeline: create(:pipeline))
 

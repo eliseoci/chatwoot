@@ -49,6 +49,11 @@ json.array! timeline_entries do |entry|
     else
       json.ownership nil
     end
+    if entry.field_values_updated?
+      json.changed_field_keys entry.metadata['changed_field_keys']
+    else
+      json.changed_field_keys nil
+    end
   end
 
   if entry.actor.present?

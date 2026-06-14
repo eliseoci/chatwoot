@@ -7,6 +7,7 @@ json.display_title resource.display_title
 json.priority resource.priority
 json.value resource.value
 json.due_date resource.due_date
+json.field_values resource.field_values
 json.created_at resource.created_at
 json.updated_at resource.updated_at
 json.contact do

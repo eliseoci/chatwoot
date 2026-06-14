@@ -11,6 +11,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import PipelineFieldSettings from './components/PipelineFieldSettings.vue';
 import { buildIntakeRulePayload } from './helpers/intakeRuleForm';
 import { buildPipelinePayload } from './helpers/pipelineForm';
 
@@ -210,6 +211,12 @@ const deleteIntakeRule = async rule => {
   }
 };
 
+const updatePipeline = updatedPipeline => {
+  pipelines.value = pipelines.value.map(pipeline =>
+    pipeline.id === updatedPipeline.id ? updatedPipeline : pipeline
+  );
+};
+
 watch(
   selectedRulePipeline,
   pipeline => {
@@ -362,6 +369,11 @@ onMounted(loadPipelines);
                 </span>
               </li>
             </ol>
+
+            <PipelineFieldSettings
+              :pipeline="pipeline"
+              @update:pipeline="updatePipeline"
+            />
           </article>
 
           <div class="mt-4 border-t border-n-weak pt-8">

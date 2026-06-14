@@ -23,6 +23,10 @@ class PipelineItemPolicy < ApplicationPolicy
     true
   end
 
+  def field_values?
+    true
+  end
+
   def linked_conversations?
     true
   end

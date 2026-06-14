@@ -35,6 +35,7 @@ import {
   sortActivities,
 } from './helpers/activities';
 import { buildPipelineItemPayload, groupItemsByStage } from './helpers/board';
+import { transitionMissingFields } from './helpers/customFields';
 import {
   attentionItems,
   channelTranslationKey,
@@ -74,6 +75,8 @@ const activities = ref([]);
 const isLoadingActivities = ref(false);
 const activeActivityId = ref(null);
 const activeActivityAction = ref(null);
+const isSavingFieldValues = ref(false);
+const promptedRequiredFieldKeys = ref([]);
 const viewMode = ref('kanban');
 const filters = reactive({ ...DEFAULT_PIPELINE_FILTERS });
 let conversationOperationSequence = 0;
@@ -96,6 +99,17 @@ const form = reactive({
 const activePipeline = computed(() =>
   pipelines.value.find(pipeline => pipeline.id === activePipelineId.value)
 );
+
+const selectedRequiredFieldKeys = computed(() => {
+  if (!selectedItem.value) return [];
+
+  const currentStageKeys =
+    activePipeline.value?.stages.find(
+      stage => stage.id === selectedItem.value.stage_id
+    )?.required_field_keys || [];
+
+  return [...new Set([...currentStageKeys, ...promptedRequiredFieldKeys.value])];
+});
 
 const sortedItems = computed(() => sortPipelineItems(items.value, filters.sort));
 
@@ -366,6 +380,7 @@ const transitionItem = async (item, targetStageId, source, optimistic = true) =>
       source,
     });
     Object.assign(item, response.data);
+    promptedRequiredFieldKeys.value = [];
     expandedTimelineItems.value = expandedTimelineItems.value.filter(
       itemId => itemId !== item.id
     );
@@ -373,7 +388,18 @@ const transitionItem = async (item, targetStageId, source, optimistic = true) =>
   } catch (error) {
     item.stage_id = previousStageId;
     syncColumns();
-    useAlert(t('PIPELINES_BOARD.API.TRANSITION_ERROR'));
+    const missingFields = transitionMissingFields(error);
+    if (missingFields.length) {
+      promptedRequiredFieldKeys.value = missingFields.map(field => field.key);
+      useAlert(
+        t('PIPELINES_BOARD.API.TRANSITION_REQUIRED_FIELDS', {
+          fields: missingFields.map(field => field.label).join(', '),
+        })
+      );
+      openItemDetails(item);
+    } else {
+      useAlert(t('PIPELINES_BOARD.API.TRANSITION_ERROR'));
+    }
   }
 };
 
@@ -461,6 +487,31 @@ const closeItemDetails = () => {
   isLoadingActivities.value = false;
   activeActivityId.value = null;
   activeActivityAction.value = null;
+  isSavingFieldValues.value = false;
+  promptedRequiredFieldKeys.value = [];
+};
+
+const saveFieldValues = async fieldValues => {
+  if (!selectedItem.value) return;
+
+  const item = selectedItem.value;
+  isSavingFieldValues.value = true;
+  try {
+    const response = await PipelineItemsAPI.updateFieldValues(item.id, {
+      fieldValues,
+      source: 'item_detail',
+    });
+    Object.assign(item, response.data);
+    promptedRequiredFieldKeys.value = [];
+    timelines[item.id] = null;
+    useAlert(t('PIPELINES_BOARD.API.FIELD_VALUES_SUCCESS'));
+  } catch (error) {
+    useAlert(t('PIPELINES_BOARD.API.FIELD_VALUES_ERROR'));
+  } finally {
+    if (selectedItem.value?.id === item.id) {
+      isSavingFieldValues.value = false;
+    }
+  }
 };
 
 const linkConversation = async conversationId => {
@@ -1244,6 +1295,9 @@ onBeforeUnmount(() => {
       :agents="agents"
       :active-activity-id="activeActivityId"
       :active-activity-action="activeActivityAction"
+      :field-definitions="activePipeline?.field_definitions || []"
+      :required-field-keys="selectedRequiredFieldKeys"
+      :is-saving-field-values="isSavingFieldValues"
       @close="closeItemDetails"
       @link-conversation="linkConversation"
       @unlink-conversation="unlinkConversation"
@@ -1251,6 +1305,7 @@ onBeforeUnmount(() => {
       @save-activity="saveActivity"
       @complete-activity="changeActivityStatus($event, 'complete')"
       @cancel-activity="changeActivityStatus($event, 'cancel')"
+      @save-field-values="saveFieldValues"
     />
   </div>
 </template>

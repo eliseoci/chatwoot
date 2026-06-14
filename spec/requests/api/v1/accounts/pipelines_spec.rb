@@ -64,6 +64,13 @@ RSpec.describe 'Pipelines API', type: :request do
 
     it 'returns account-scoped pipelines and ordered stages to operators' do
       create(:pipeline, account: create(:account), name: 'Other account')
+      field = create(
+        :pipeline_field_definition,
+        pipeline: pipeline,
+        account: account,
+        label: 'Contract value'
+      )
+      pipeline.stages.second.update!(required_field_keys: [field.key])
 
       get "/api/v1/accounts/#{account.id}/pipelines",
           headers: agent.create_new_auth_token,
@@ -72,6 +79,11 @@ RSpec.describe 'Pipelines API', type: :request do
       expect(response).to have_http_status(:success)
       expect(response.parsed_body.pluck('id')).to eq([pipeline.id])
       expect(response.parsed_body.first['stages'].pluck('position')).to eq([0, 1])
+      expect(response.parsed_body.first['field_definitions'].first).to include(
+        'key' => field.key,
+        'field_type' => 'text'
+      )
+      expect(response.parsed_body.first['stages'].second['required_field_keys']).to eq([field.key])
     end
   end
 

@@ -1,0 +1,11 @@
+json.id resource.id
+json.account_id resource.account_id
+json.pipeline_id resource.pipeline_id
+json.key resource.key
+json.label resource.label
+json.field_type resource.field_type
+json.position resource.position
+json.settings resource.settings
+json.archived_at resource.archived_at
+json.created_at resource.created_at
+json.updated_at resource.updated_at

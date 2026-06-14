@@ -146,14 +146,18 @@ jobs:
             --no-coverage \
             app/javascript/dashboard/api/specs/pipelineIntakeRules.spec.js \
             app/javascript/dashboard/api/specs/pipelineActivities.spec.js \
+            app/javascript/dashboard/api/specs/pipelineFieldDefinitions.spec.js \
             app/javascript/dashboard/api/specs/pipelineItems.spec.js \
+            app/javascript/dashboard/api/specs/pipelineStages.spec.js \
             app/javascript/dashboard/api/specs/pipelines.spec.js \
             app/javascript/dashboard/components/widgets/conversation/pipelines/specs/PipelineItemsList.spec.js \
             app/javascript/dashboard/helper/specs/actionCable.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineItemTable.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineItemDetails.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineWorkspaceToolbar.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/activities.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/board.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/helpers/customFields.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/workspace.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/intakeRuleForm.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js

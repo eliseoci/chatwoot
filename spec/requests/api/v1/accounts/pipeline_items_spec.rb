@@ -445,6 +445,92 @@ RSpec.describe 'Pipeline Items API', type: :request do
       expect(response).to have_http_status(:not_found)
       expect(item.reload.stage).to eq(pipeline.stages.first)
     end
+
+    it 'returns structured missing-field errors and preserves the current stage' do
+      field = create(
+        :pipeline_field_definition,
+        account: account,
+        pipeline: pipeline,
+        label: 'Contract value'
+      )
+      pipeline.stages.second.update!(required_field_keys: [field.key])
+
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/transition",
+            params: {
+              transition: {
+                stage_id: pipeline.stages.second.id,
+                source: 'board_command'
+              }
+            },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body).to include(
+        'error' => 'missing_required_fields',
+        'missing_field_keys' => [field.key],
+        'missing_fields' => [{ 'key' => field.key, 'label' => field.label }]
+      )
+      expect(item.reload.stage).to eq(pipeline.stages.first)
+      expect(item.stage_transitions).to be_empty
+    end
+  end
+
+  describe 'PATCH /api/v1/accounts/:account_id/pipeline_items/:id/field_values' do
+    let(:item) do
+      create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+    end
+
+    it 'updates typed item-owned fields and exposes them in item responses and history' do
+      field = create(
+        :pipeline_field_definition,
+        account: account,
+        pipeline: pipeline,
+        label: 'Customer brief'
+      )
+
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/field_values",
+            params: {
+              pipeline_item: {
+                field_values: { field.key => 'Enterprise renewal' },
+                source: 'item_detail'
+              }
+            },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['field_values']).to eq(field.key => 'Enterprise renewal')
+      expect(item.events.last).to have_attributes(
+        event_type: 'field_values_updated',
+        actor: agent,
+        source: 'item_detail'
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/timeline",
+          headers: agent.create_new_auth_token,
+          as: :json
+      expect(response.parsed_body.first).to include(
+        'event_type' => 'field_values_updated',
+        'changed_field_keys' => [field.key]
+      )
+    end
+
+    it 'rejects fields from another pipeline without changing stored values' do
+      other_field = create(:pipeline_field_definition)
+
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/field_values",
+            params: {
+              pipeline_item: {
+                field_values: { other_field.key => 'Private' }
+              }
+            },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(item.reload.field_values).to be_empty
+    end
   end
 
   describe 'PATCH /api/v1/accounts/:account_id/pipeline_items/:id/ownership' do

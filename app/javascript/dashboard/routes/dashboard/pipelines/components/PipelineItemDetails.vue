@@ -14,6 +14,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import { initializeFieldValues } from '../helpers/customFields';
 
 const props = defineProps({
   item: {
@@ -52,6 +53,18 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  fieldDefinitions: {
+    type: Array,
+    default: () => [],
+  },
+  requiredFieldKeys: {
+    type: Array,
+    default: () => [],
+  },
+  isSavingFieldValues: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -62,6 +75,7 @@ const emit = defineEmits([
   'save-activity',
   'complete-activity',
   'cancel-activity',
+  'save-field-values',
 ]);
 
 const { locale, t } = useI18n();
@@ -75,6 +89,7 @@ const activityForm = reactive({
   assigneeId: '',
   notes: '',
 });
+const fieldForm = reactive({});
 
 const linkedConversationIds = computed(
   () =>
@@ -144,6 +159,46 @@ const activityTypeLabel = value =>
 const activityStatusLabel = value =>
   t(`PIPELINES_BOARD.ACTIVITIES.STATUS.${value.toUpperCase()}`);
 
+const storedFieldValue = definition =>
+  props.item.field_values?.[definition.key];
+
+const hasStoredFieldValue = definition => {
+  const value = storedFieldValue(definition);
+  return value !== null && value !== undefined && value !== '';
+};
+
+const formatStoredFieldValue = definition => {
+  const value = storedFieldValue(definition);
+  if (definition.field_type === 'number') {
+    return new Intl.NumberFormat(locale.value).format(Number(value));
+  }
+  if (definition.field_type === 'currency') {
+    return new Intl.NumberFormat(locale.value, {
+      style: 'currency',
+      currency: definition.settings.currency,
+    }).format(Number(value));
+  }
+  if (definition.field_type === 'date') {
+    return new Intl.DateTimeFormat(locale.value, {
+      dateStyle: 'medium',
+    }).format(new Date(`${value}T00:00:00`));
+  }
+  if (definition.field_type === 'boolean') {
+    return t(
+      value
+        ? 'PIPELINES_BOARD.FIELDS.BOOLEAN_YES'
+        : 'PIPELINES_BOARD.FIELDS.BOOLEAN_NO'
+    );
+  }
+  if (definition.field_type === 'user_reference') {
+    return (
+      props.agents.find(agent => agent.id === Number(value))?.available_name ||
+      t('PIPELINES_BOARD.FIELDS.USER_UNAVAILABLE')
+    );
+  }
+  return value;
+};
+
 const toLocalInputValue = value => {
   if (!value) return '';
   const date = new Date(value);
@@ -181,6 +236,18 @@ const saveActivity = () => {
   });
 };
 
+const resetFieldForm = () => {
+  Object.keys(fieldForm).forEach(key => delete fieldForm[key]);
+  Object.assign(
+    fieldForm,
+    initializeFieldValues(props.fieldDefinitions, props.item.field_values)
+  );
+};
+
+const saveFieldValues = () => {
+  emit('save-field-values', { ...fieldForm });
+};
+
 const submitLink = () => {
   if (!selectedConversationId.value) return;
   emit('link-conversation', Number(selectedConversationId.value));
@@ -195,8 +262,19 @@ watch(
   () => {
     selectedConversationId.value = '';
     resetActivityForm();
+    resetFieldForm();
   }
 );
+
+watch(
+  () =>
+    props.fieldDefinitions
+      .map(definition => `${definition.id}:${definition.updated_at}`)
+      .join(','),
+  resetFieldForm
+);
+
+watch(() => props.item.field_values, resetFieldForm, { deep: true });
 
 watch(
   () =>
@@ -215,6 +293,7 @@ watch(
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown);
+  resetFieldForm();
   nextTick(() => closeButtonRef.value?.$el?.focus());
 });
 
@@ -264,6 +343,152 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
         </header>
 
         <div class="flex flex-1 flex-col gap-6 overflow-y-auto p-5">
+          <section v-if="fieldDefinitions.length" class="flex flex-col gap-3">
+            <div>
+              <h3 class="text-heading-3 text-n-slate-12">
+                {{ $t('PIPELINES_BOARD.FIELDS.TITLE') }}
+              </h3>
+              <p class="mb-0 text-sm text-n-slate-10">
+                {{ $t('PIPELINES_BOARD.FIELDS.DESCRIPTION') }}
+              </p>
+            </div>
+
+            <form
+              class="grid gap-3 rounded-xl bg-n-alpha-black2 p-4 sm:grid-cols-2"
+              @submit.prevent="saveFieldValues"
+            >
+              <div
+                v-for="definition in fieldDefinitions"
+                :key="definition.id"
+                class="flex flex-col gap-1 text-heading-3 text-n-slate-12"
+                :class="{ 'sm:col-span-2': definition.field_type === 'text' }"
+              >
+                <label
+                  :for="`pipeline-field-${definition.id}`"
+                  class="flex items-center gap-2"
+                >
+                  {{ definition.label }}
+                  <span
+                    v-if="requiredFieldKeys.includes(definition.key)"
+                    class="rounded bg-n-amber-3 px-1.5 py-0.5 text-xs text-n-amber-11"
+                  >
+                    {{ $t('PIPELINES_BOARD.FIELDS.REQUIRED') }}
+                  </span>
+                </label>
+
+                <input
+                  v-if="definition.field_type === 'text'"
+                  :id="`pipeline-field-${definition.id}`"
+                  v-model="fieldForm[definition.key]"
+                  type="text"
+                  class="h-9 rounded-lg border-0 bg-n-solid-1 px-3 text-sm font-normal outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                />
+                <input
+                  v-else-if="
+                    definition.field_type === 'number' ||
+                    definition.field_type === 'currency'
+                  "
+                  v-model="fieldForm[definition.key]"
+                  :id="`pipeline-field-${definition.id}`"
+                  type="number"
+                  step="any"
+                  class="h-9 rounded-lg border-0 bg-n-solid-1 px-3 text-sm font-normal outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                />
+                <span
+                  v-if="definition.field_type === 'currency'"
+                  class="text-xs font-normal text-n-slate-9"
+                >
+                  {{
+                    $t('PIPELINES_BOARD.FIELDS.CURRENCY_HINT', {
+                      currency: definition.settings.currency,
+                    })
+                  }}
+                </span>
+                <input
+                  v-else-if="definition.field_type === 'date'"
+                  :id="`pipeline-field-${definition.id}`"
+                  v-model="fieldForm[definition.key]"
+                  type="date"
+                  class="h-9 rounded-lg border-0 bg-n-solid-1 px-3 text-sm font-normal outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                />
+                <select
+                  v-else-if="definition.field_type === 'boolean'"
+                  :id="`pipeline-field-${definition.id}`"
+                  v-model="fieldForm[definition.key]"
+                  class="h-9 rounded-lg border-0 bg-n-solid-1 px-3 text-sm font-normal outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                >
+                  <option value="">
+                    {{ $t('PIPELINES_BOARD.FIELDS.SELECT_PLACEHOLDER') }}
+                  </option>
+                  <option :value="true">
+                    {{ $t('PIPELINES_BOARD.FIELDS.BOOLEAN_YES') }}
+                  </option>
+                  <option :value="false">
+                    {{ $t('PIPELINES_BOARD.FIELDS.BOOLEAN_NO') }}
+                  </option>
+                </select>
+                <select
+                  v-else-if="definition.field_type === 'list'"
+                  :id="`pipeline-field-${definition.id}`"
+                  v-model="fieldForm[definition.key]"
+                  class="h-9 rounded-lg border-0 bg-n-solid-1 px-3 text-sm font-normal outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                >
+                  <option value="">
+                    {{ $t('PIPELINES_BOARD.FIELDS.SELECT_PLACEHOLDER') }}
+                  </option>
+                  <option
+                    v-for="choice in definition.settings.choices"
+                    :key="choice"
+                    :value="choice"
+                  >
+                    {{ choice }}
+                  </option>
+                </select>
+                <input
+                  v-else-if="definition.field_type === 'link'"
+                  :id="`pipeline-field-${definition.id}`"
+                  v-model="fieldForm[definition.key]"
+                  type="url"
+                  class="h-9 rounded-lg border-0 bg-n-solid-1 px-3 text-sm font-normal outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                  :placeholder="$t('PIPELINES_BOARD.FIELDS.LINK_PLACEHOLDER')"
+                />
+                <select
+                  v-else-if="definition.field_type === 'user_reference'"
+                  :id="`pipeline-field-${definition.id}`"
+                  v-model.number="fieldForm[definition.key]"
+                  class="h-9 rounded-lg border-0 bg-n-solid-1 px-3 text-sm font-normal outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                >
+                  <option value="">
+                    {{ $t('PIPELINES_BOARD.FIELDS.USER_PLACEHOLDER') }}
+                  </option>
+                  <option v-for="agent in agents" :key="agent.id" :value="agent.id">
+                    {{ agent.available_name }}
+                  </option>
+                </select>
+                <span
+                  v-if="hasStoredFieldValue(definition)"
+                  class="text-xs font-normal text-n-slate-9"
+                >
+                  {{
+                    $t('PIPELINES_BOARD.FIELDS.CURRENT_VALUE', {
+                      value: formatStoredFieldValue(definition),
+                    })
+                  }}
+                </span>
+              </div>
+
+              <Button
+                class="sm:col-span-2"
+                type="submit"
+                size="sm"
+                icon="i-lucide-save"
+                :label="$t('PIPELINES_BOARD.FIELDS.SAVE')"
+                :is-loading="isSavingFieldValues"
+                :disabled="isSavingFieldValues"
+              />
+            </form>
+          </section>
+
           <section class="flex flex-col gap-3">
             <div>
               <h3 class="text-heading-3 text-n-slate-12">

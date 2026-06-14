@@ -92,6 +92,7 @@
       "ACTIVITY_COMPLETED": "{actor} completed “{title}”.",
       "ACTIVITY_CANCELED": "{actor} canceled “{title}”.",
       "OWNERSHIP_CHANGED": "{actor} changed ownership from {from} to {to}.",
+      "FIELD_VALUES_UPDATED": "{actor} updated pipeline fields.",
       "SYSTEM_ACTOR": "System",
       "REMOVED_CONVERSATION": "removed",
       "EMPTY": "No activity yet."
@@ -143,6 +144,20 @@
         "WHATSAPP": "WhatsApp",
         "OTHER": "Other channel"
       }
+    },
+    "FIELDS": {
+      "TITLE": "Pipeline fields",
+      "DESCRIPTION": "Keep the business details needed to move this item forward.",
+      "REQUIRED": "Required",
+      "SAVE": "Save fields",
+      "BOOLEAN_YES": "Yes",
+      "BOOLEAN_NO": "No",
+      "SELECT_PLACEHOLDER": "Select an option",
+      "LINK_PLACEHOLDER": "https://example.com",
+      "USER_PLACEHOLDER": "Select a team member",
+      "CURRENCY_HINT": "Amount in {currency}",
+      "CURRENT_VALUE": "Current: {value}",
+      "USER_UNAVAILABLE": "Unavailable team member"
     },
     "ACTIVITIES": {
       "TITLE": "Next activities",
@@ -218,6 +233,9 @@
       "CREATE_SUCCESS": "Pipeline item added.",
       "CREATE_ERROR": "The pipeline item could not be added.",
       "TRANSITION_ERROR": "The item could not be moved. Its previous stage was restored.",
+      "TRANSITION_REQUIRED_FIELDS": "Complete these fields before moving the item: {fields}.",
+      "FIELD_VALUES_SUCCESS": "Pipeline fields saved.",
+      "FIELD_VALUES_ERROR": "The pipeline fields could not be saved.",
       "TIMELINE_ERROR": "Item history could not be loaded.",
       "DETAIL_LOAD_ERROR": "Item details could not be loaded.",
       "CONVERSATIONS_LOAD_ERROR": "Conversations for this contact could not be loaded.",

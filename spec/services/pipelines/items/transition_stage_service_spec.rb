@@ -71,6 +71,47 @@ RSpec.describe Pipelines::Items::TransitionStageService do
     expect { transition(pipeline.stages.first.id) }.not_to change(PipelineItemStageTransition, :count)
   end
 
+  it 'returns required field definitions without moving the item' do
+    required_field = create(
+      :pipeline_field_definition,
+      pipeline: pipeline,
+      account: account,
+      label: 'Contract value'
+    )
+    target_stage = pipeline.stages.second
+    target_stage.update!(required_field_keys: [required_field.key])
+
+    expect { transition(target_stage.id) }
+      .to raise_error(Pipelines::Items::MissingRequiredFieldsError) do |error|
+        expect(error.field_keys).to eq([required_field.key])
+      end
+    expect(item.reload.stage).to eq(pipeline.stages.first)
+    expect(item.stage_transitions).to be_empty
+
+    item.update!(field_values: { required_field.key => 'Signed' })
+    expect { transition(target_stage.id) }.to change(PipelineItemStageTransition, :count).by(1)
+  end
+
+  it 'treats false and zero as completed required values' do
+    boolean = create(
+      :pipeline_field_definition,
+      pipeline: pipeline,
+      account: account,
+      field_type: :boolean
+    )
+    number = create(
+      :pipeline_field_definition,
+      pipeline: pipeline,
+      account: account,
+      field_type: :number
+    )
+    target_stage = pipeline.stages.second
+    target_stage.update!(required_field_keys: [boolean.key, number.key])
+    item.update!(field_values: { boolean.key => false, number.key => '0.0' })
+
+    expect { transition(target_stage.id) }.to change(PipelineItemStageTransition, :count).by(1)
+  end
+
   it 'does not change conversation status in the same account' do
     conversation = create(:conversation, account: account, status: :open)
 
