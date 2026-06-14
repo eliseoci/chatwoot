@@ -36,6 +36,15 @@ class PipelineItem < ApplicationRecord
            class_name: 'PipelineItemEvent',
            inverse_of: :pipeline_item,
            dependent: :destroy
+  has_many :activities,
+           class_name: 'PipelineActivity',
+           inverse_of: :pipeline_item,
+           dependent: :destroy
+  has_many :scheduled_activities,
+           -> { next_due },
+           class_name: 'PipelineActivity',
+           inverse_of: :pipeline_item,
+           dependent: :destroy
 
   enum :priority, { low: 0, medium: 1, high: 2, urgent: 3 }, prefix: true
 
@@ -46,6 +55,10 @@ class PipelineItem < ApplicationRecord
 
   def display_title
     title.presence || contact.name.presence || contact.email.presence || contact.phone_number
+  end
+
+  def next_activity
+    scheduled_activities.first
   end
 
   private

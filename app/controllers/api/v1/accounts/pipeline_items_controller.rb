@@ -16,7 +16,7 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
     @transitions = @pipeline_item.stage_transitions
                                  .includes(:from_stage, :to_stage, :actor)
                                  .order(created_at: :desc)
-    @events = @pipeline_item.events.includes(:conversation, :actor).order(created_at: :desc)
+    @events = @pipeline_item.events.includes(:conversation, :actor, :pipeline_activity).order(created_at: :desc)
     @visible_conversation_ids = @events.filter_map(&:conversation).select do |conversation|
       policy(conversation).show?
     end.to_set(&:id)
@@ -65,6 +65,7 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
   def pipeline_items_scope
     Current.account.pipeline_items
            .includes(:pipeline, :stage, :contact, :owner, :team,
+                     scheduled_activities: :assignee,
                      conversation_links: [:linked_by, { conversation: [:inbox, :assignee] }])
            .order(created_at: :desc)
   end

@@ -95,6 +95,7 @@ class Account < ApplicationRecord
   has_many :pipeline_item_stage_transitions, dependent: :destroy_async
   has_many :pipeline_item_conversations, dependent: :destroy_async
   has_many :pipeline_item_events, dependent: :destroy_async
+  has_many :pipeline_activities, dependent: :destroy_async
   has_many :pipeline_intake_rules, dependent: :destroy_async
   has_many :sms_channels, dependent: :destroy_async, class_name: '::Channel::Sms'
   has_many :teams, dependent: :destroy_async

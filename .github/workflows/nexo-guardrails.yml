@@ -136,8 +136,10 @@ jobs:
             --no-cache \
             --no-coverage \
             app/javascript/dashboard/api/specs/pipelineIntakeRules.spec.js \
+            app/javascript/dashboard/api/specs/pipelineActivities.spec.js \
             app/javascript/dashboard/api/specs/pipelineItems.spec.js \
             app/javascript/dashboard/api/specs/pipelines.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/helpers/activities.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/board.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/intakeRuleForm.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js

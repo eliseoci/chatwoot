@@ -7,6 +7,7 @@ import Draggable from 'vuedraggable';
 
 import AgentsAPI from 'dashboard/api/agents';
 import ContactAPI from 'dashboard/api/contacts';
+import PipelineActivitiesAPI from 'dashboard/api/pipelineActivities';
 import PipelineItemsAPI from 'dashboard/api/pipelineItems';
 import PipelinesAPI from 'dashboard/api/pipelines';
 import TeamsAPI from 'dashboard/api/teams';
@@ -15,6 +16,10 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import PipelineItemDetails from './components/PipelineItemDetails.vue';
+import {
+  buildPipelineActivityPayload,
+  sortActivities,
+} from './helpers/activities';
 import { buildPipelineItemPayload, groupItemsByStage } from './helpers/board';
 
 const route = useRoute();
@@ -37,7 +42,12 @@ const selectedItem = ref(null);
 const candidateConversations = ref([]);
 const isLoadingCandidates = ref(false);
 const activeConversationId = ref(null);
+const activities = ref([]);
+const isLoadingActivities = ref(false);
+const activeActivityId = ref(null);
+const activeActivityAction = ref(null);
 let conversationOperationSequence = 0;
+let activityOperationSequence = 0;
 
 const form = reactive({
   title: '',
@@ -84,6 +94,15 @@ const formatTransitionTime = createdAt =>
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(createdAt));
+
+const formatActivityTime = dueAt =>
+  new Intl.DateTimeFormat(locale.value, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(dueAt));
+
+const activityTypeLabel = activityType =>
+  t(`PIPELINES_BOARD.ACTIVITIES.TYPE.${activityType.toUpperCase()}`);
 
 const timelineActor = transition =>
   transition.actor?.name || t('PIPELINES_BOARD.TIMELINE.SYSTEM_ACTOR');
@@ -259,32 +278,44 @@ const openItemDetails = async item => {
   selectedItem.value = item;
   candidateConversations.value = [];
   isLoadingCandidates.value = true;
+  isLoadingActivities.value = true;
   const itemId = item.id;
 
   try {
-    const [conversationsResponse, linkedConversationsResponse] =
-      await Promise.all([
-        ContactAPI.getConversations(item.contact.id),
-        PipelineItemsAPI.linkedConversations(item.id),
-      ]);
+    const [
+      conversationsResponse,
+      linkedConversationsResponse,
+      activitiesResponse,
+    ] = await Promise.all([
+      ContactAPI.getConversations(item.contact.id),
+      PipelineItemsAPI.linkedConversations(item.id),
+      PipelineActivitiesAPI.get(item.id),
+    ]);
     if (selectedItem.value?.id !== itemId) return;
     candidateConversations.value = conversationsResponse.data.payload;
     item.linked_conversations = linkedConversationsResponse.data;
+    activities.value = sortActivities(activitiesResponse.data);
   } catch (error) {
     if (selectedItem.value?.id !== itemId) return;
-    useAlert(t('PIPELINES_BOARD.API.CONVERSATIONS_LOAD_ERROR'));
+    useAlert(t('PIPELINES_BOARD.API.DETAIL_LOAD_ERROR'));
   } finally {
     if (selectedItem.value?.id === itemId) {
       isLoadingCandidates.value = false;
+      isLoadingActivities.value = false;
     }
   }
 };
 
 const closeItemDetails = () => {
   conversationOperationSequence += 1;
+  activityOperationSequence += 1;
   selectedItem.value = null;
   candidateConversations.value = [];
   activeConversationId.value = null;
+  activities.value = [];
+  isLoadingActivities.value = false;
+  activeActivityId.value = null;
+  activeActivityAction.value = null;
 };
 
 const linkConversation = async conversationId => {
@@ -343,6 +374,100 @@ const unlinkConversation = async conversationId => {
   } finally {
     if (operationId === conversationOperationSequence) {
       activeConversationId.value = null;
+    }
+  }
+};
+
+const syncNextActivity = item => {
+  item.next_activity =
+    sortActivities(activities.value).find(
+      activity => activity.status === 'scheduled'
+    ) || null;
+};
+
+const saveActivity = async activityForm => {
+  if (!selectedItem.value) return;
+
+  const item = selectedItem.value;
+  const operationId = ++activityOperationSequence;
+  activeActivityId.value = activityForm.id || 0;
+  activeActivityAction.value = 'save';
+
+  try {
+    const payload = buildPipelineActivityPayload(activityForm);
+    const response = activityForm.id
+      ? await PipelineActivitiesAPI.update(item.id, activityForm.id, payload)
+      : await PipelineActivitiesAPI.create(item.id, payload);
+    if (
+      operationId !== activityOperationSequence ||
+      selectedItem.value?.id !== item.id
+    ) {
+      return;
+    }
+    const existingIndex = activities.value.findIndex(
+      activity => activity.id === response.data.id
+    );
+    if (existingIndex === -1) {
+      activities.value.push(response.data);
+    } else {
+      activities.value.splice(existingIndex, 1, response.data);
+    }
+    activities.value = sortActivities(activities.value);
+    syncNextActivity(item);
+    timelines[item.id] = null;
+    useAlert(
+      t(
+        activityForm.id
+          ? 'PIPELINES_BOARD.API.ACTIVITY_UPDATE_SUCCESS'
+          : 'PIPELINES_BOARD.API.ACTIVITY_CREATE_SUCCESS'
+      )
+    );
+  } catch (error) {
+    useAlert(t('PIPELINES_BOARD.API.ACTIVITY_SAVE_ERROR'));
+  } finally {
+    if (operationId === activityOperationSequence) {
+      activeActivityId.value = null;
+      activeActivityAction.value = null;
+    }
+  }
+};
+
+const changeActivityStatus = async (activityId, action) => {
+  if (!selectedItem.value) return;
+
+  const item = selectedItem.value;
+  const operationId = ++activityOperationSequence;
+  activeActivityId.value = activityId;
+  activeActivityAction.value = action;
+
+  try {
+    const response = await PipelineActivitiesAPI[action](
+      item.id,
+      activityId,
+      'item_detail'
+    );
+    if (
+      operationId !== activityOperationSequence ||
+      selectedItem.value?.id !== item.id
+    ) {
+      return;
+    }
+    const activityIndex = activities.value.findIndex(
+      activity => activity.id === activityId
+    );
+    if (activityIndex >= 0) {
+      activities.value.splice(activityIndex, 1, response.data);
+    }
+    activities.value = sortActivities(activities.value);
+    syncNextActivity(item);
+    timelines[item.id] = null;
+    useAlert(t(`PIPELINES_BOARD.API.ACTIVITY_${action.toUpperCase()}_SUCCESS`));
+  } catch (error) {
+    useAlert(t('PIPELINES_BOARD.API.ACTIVITY_STATUS_ERROR'));
+  } finally {
+    if (operationId === activityOperationSequence) {
+      activeActivityId.value = null;
+      activeActivityAction.value = null;
     }
   }
 };
@@ -547,6 +672,47 @@ onMounted(loadBoard);
                 <span v-if="item.team">{{ item.team.name }}</span>
               </div>
 
+              <div
+                v-if="item.next_activity"
+                class="flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs"
+                :class="
+                  item.next_activity.overdue
+                    ? 'bg-n-ruby-3 text-n-ruby-11'
+                    : 'bg-n-alpha-black2 text-n-slate-11'
+                "
+              >
+                <Icon
+                  :icon="
+                    item.next_activity.overdue
+                      ? 'i-lucide-circle-alert'
+                      : 'i-lucide-calendar-clock'
+                  "
+                  class="mt-0.5 size-3.5 shrink-0"
+                />
+                <div class="min-w-0">
+                  <p class="mb-0 truncate font-medium">
+                    {{ item.next_activity.title }}
+                  </p>
+                  <p class="mb-0 opacity-80">
+                    {{
+                      item.next_activity.overdue
+                        ? $t('PIPELINES_BOARD.ACTIVITIES.CARD_OVERDUE', {
+                            type: activityTypeLabel(
+                              item.next_activity.activity_type
+                            ),
+                            date: formatActivityTime(item.next_activity.due_at),
+                          })
+                        : $t('PIPELINES_BOARD.ACTIVITIES.CARD_DUE', {
+                            type: activityTypeLabel(
+                              item.next_activity.activity_type
+                            ),
+                            date: formatActivityTime(item.next_activity.due_at),
+                          })
+                    }}
+                  </p>
+                </div>
+              </div>
+
               <div class="flex items-center gap-2 border-t border-n-weak pt-2">
                 <select
                   :value="item.stage_id"
@@ -632,12 +798,23 @@ onMounted(loadBoard);
                       })
                     }}
                   </template>
-                  <template v-else>
+                  <template v-else-if="transition.event_type === 'parallel_item_created'">
                     {{
                       $t('PIPELINES_BOARD.TIMELINE.PARALLEL_ITEM_CREATED', {
                         id: timelineConversation(transition),
                         actor: timelineActor(transition),
                       })
+                    }}
+                  </template>
+                  <template v-else>
+                    {{
+                      $t(
+                        `PIPELINES_BOARD.TIMELINE.${transition.event_type.toUpperCase()}`,
+                        {
+                          title: transition.activity?.title,
+                          actor: timelineActor(transition),
+                        }
+                      )
                     }}
                   </template>
                   <span class="block text-n-slate-9">
@@ -788,10 +965,18 @@ onMounted(loadBoard);
       :candidate-conversations="candidateConversations"
       :is-loading-candidates="isLoadingCandidates"
       :active-conversation-id="activeConversationId"
+      :activities="activities"
+      :is-loading-activities="isLoadingActivities"
+      :agents="agents"
+      :active-activity-id="activeActivityId"
+      :active-activity-action="activeActivityAction"
       @close="closeItemDetails"
       @link-conversation="linkConversation"
       @unlink-conversation="unlinkConversation"
       @open-conversation="openConversation"
+      @save-activity="saveActivity"
+      @complete-activity="changeActivityStatus($event, 'complete')"
+      @cancel-activity="changeActivityStatus($event, 'cancel')"
     />
   </div>
 </template>

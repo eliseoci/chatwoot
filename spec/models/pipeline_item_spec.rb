@@ -16,6 +16,7 @@ RSpec.describe PipelineItem do
     it { is_expected.to have_many(:conversation_links).class_name('PipelineItemConversation').dependent(:destroy) }
     it { is_expected.to have_many(:linked_conversations).through(:conversation_links).source(:conversation) }
     it { is_expected.to have_many(:events).class_name('PipelineItemEvent').dependent(:destroy) }
+    it { is_expected.to have_many(:activities).class_name('PipelineActivity').dependent(:destroy) }
   end
 
   describe 'validations' do
@@ -72,6 +73,24 @@ RSpec.describe PipelineItem do
       item = build_pipeline_item(title: nil)
 
       expect(item.display_title).to eq(item.contact.name)
+    end
+  end
+
+  describe '#next_activity' do
+    it 'returns the earliest scheduled activity' do
+      item = create(:pipeline_item)
+      create(:pipeline_activity, pipeline_item: item, account: item.account, due_at: 2.days.from_now)
+      next_activity = create(:pipeline_activity, pipeline_item: item, account: item.account, due_at: 1.day.from_now)
+      create(
+        :pipeline_activity,
+        pipeline_item: item,
+        account: item.account,
+        status: :completed,
+        completed_at: Time.current,
+        due_at: 1.hour.from_now
+      )
+
+      expect(item.next_activity).to eq(next_activity)
     end
   end
 

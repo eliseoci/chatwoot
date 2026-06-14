@@ -24,6 +24,17 @@ json.array! timeline_entries do |entry|
     else
       json.conversation nil
     end
+    if entry.pipeline_activity.present?
+      json.activity do
+        json.id entry.pipeline_activity.id
+        json.title entry.metadata['title'] || entry.pipeline_activity.title
+        json.activity_type(
+          entry.metadata['activity_type'] || entry.pipeline_activity.activity_type
+        )
+      end
+    else
+      json.activity nil
+    end
   end
 
   if entry.actor.present?

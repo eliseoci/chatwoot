@@ -34,3 +34,14 @@ if resource.team.present?
 else
   json.team nil
 end
+
+next_activity = resource.next_activity
+if next_activity.present?
+  json.next_activity do
+    json.partial! 'api/v1/models/pipeline_activity',
+                  formats: [:json],
+                  resource: next_activity
+  end
+else
+  json.next_activity nil
+end

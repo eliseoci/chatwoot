@@ -120,6 +120,10 @@ en:
       contact_mismatch: must belong to the pipeline item's contact
     pipeline_item_event:
       account_mismatch: must belong to the same account as the pipeline item
+      activity_mismatch: must belong to the same pipeline item
+    pipeline_activity:
+      account_mismatch: must belong to the same account as the activity
+      terminal: cannot be changed after it is completed or canceled
     pipeline_intake_rule:
       account_mismatch: must belong to the same account as the intake rule
       stage_mismatch: must belong to the selected pipeline

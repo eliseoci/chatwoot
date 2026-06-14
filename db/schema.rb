@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_004000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_005000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1258,6 +1258,30 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_004000) do
     t.check_constraint "position >= 0", name: "pipeline_stages_position_non_negative"
   end
 
+  create_table "pipeline_activities", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_item_id", null: false
+    t.bigint "assignee_id"
+    t.bigint "created_by_id"
+    t.integer "activity_type", default: 0, null: false
+    t.integer "status", default: 0, null: false
+    t.string "title", null: false
+    t.datetime "due_at", null: false
+    t.datetime "completed_at"
+    t.datetime "canceled_at"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_activities_on_account_id"
+    t.index ["assignee_id", "status", "due_at"], name: "index_pipeline_activities_on_assignee_status_due_at"
+    t.index ["assignee_id"], name: "index_pipeline_activities_on_assignee_id"
+    t.index ["created_by_id"], name: "index_pipeline_activities_on_created_by_id"
+    t.index ["pipeline_item_id", "status", "due_at"], name: "index_pipeline_activities_on_item_status_due_at"
+    t.index ["pipeline_item_id"], name: "index_pipeline_activities_on_pipeline_item_id"
+    t.check_constraint "activity_type >= 0 AND activity_type <= 4", name: "pipeline_activities_type_range"
+    t.check_constraint "status >= 0 AND status <= 2", name: "pipeline_activities_status_range"
+  end
+
   create_table "pipeline_items", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "pipeline_id", null: false
@@ -1302,6 +1326,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_004000) do
     t.bigint "pipeline_item_id", null: false
     t.bigint "conversation_id"
     t.bigint "actor_id"
+    t.bigint "pipeline_activity_id"
+    t.jsonb "metadata", default: {}, null: false
     t.integer "event_type", null: false
     t.string "source", null: false
     t.datetime "created_at", null: false
@@ -1311,7 +1337,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_004000) do
     t.index ["conversation_id"], name: "index_pipeline_item_events_on_conversation_id"
     t.index ["pipeline_item_id", "created_at"], name: "index_pipeline_item_events_on_item_and_created_at"
     t.index ["pipeline_item_id"], name: "index_pipeline_item_events_on_pipeline_item_id"
-    t.check_constraint "event_type >= 0 AND event_type <= 4", name: "pipeline_item_events_type_range"
+    t.index ["pipeline_activity_id"], name: "index_pipeline_item_events_on_pipeline_activity_id"
+    t.check_constraint "event_type >= 0 AND event_type <= 8", name: "pipeline_item_events_type_range"
   end
 
   create_table "pipeline_intake_rules", force: :cascade do |t|
@@ -1443,6 +1470,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_004000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "pipeline_activities", "accounts"
+  add_foreign_key "pipeline_activities", "pipeline_items"
+  add_foreign_key "pipeline_activities", "users", column: "assignee_id", on_delete: :nullify
+  add_foreign_key "pipeline_activities", "users", column: "created_by_id", on_delete: :nullify
   add_foreign_key "pipeline_item_conversations", "accounts"
   add_foreign_key "pipeline_item_conversations", "conversations", on_delete: :cascade
   add_foreign_key "pipeline_item_conversations", "pipeline_items"
@@ -1450,6 +1481,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_004000) do
   add_foreign_key "pipeline_item_events", "accounts"
   add_foreign_key "pipeline_item_events", "conversations", on_delete: :nullify
   add_foreign_key "pipeline_item_events", "pipeline_items"
+  add_foreign_key "pipeline_item_events", "pipeline_activities", on_delete: :nullify
   add_foreign_key "pipeline_item_events", "users", column: "actor_id", on_delete: :nullify
   add_foreign_key "pipeline_intake_rules", "accounts"
   add_foreign_key "pipeline_intake_rules", "inboxes", on_delete: :cascade

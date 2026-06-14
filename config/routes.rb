@@ -308,6 +308,12 @@ Rails.application.routes.draw do
             get :templates, on: :collection
           end
           resources :pipeline_items, only: [:index, :show, :create] do
+            resources :activities,
+                      controller: 'pipeline_activities',
+                      only: [:index, :create, :update] do
+              patch :complete, on: :member
+              patch :cancel, on: :member
+            end
             get :timeline, on: :member
             patch :transition, on: :member
             get :linked_conversations, on: :member

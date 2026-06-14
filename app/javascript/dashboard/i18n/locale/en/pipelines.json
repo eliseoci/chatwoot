@@ -18,6 +18,10 @@
       "AUTOMATIC_ITEM_CREATED": "This item was created automatically from conversation #{id}.",
       "CONVERSATION_DEDUPLICATED": "Conversation #{id} was matched to this active item.",
       "PARALLEL_ITEM_CREATED": "{actor} created a separate item for conversation #{id}.",
+      "ACTIVITY_CREATED": "{actor} scheduled “{title}”.",
+      "ACTIVITY_UPDATED": "{actor} updated “{title}”.",
+      "ACTIVITY_COMPLETED": "{actor} completed “{title}”.",
+      "ACTIVITY_CANCELED": "{actor} canceled “{title}”.",
       "SYSTEM_ACTOR": "System",
       "REMOVED_CONVERSATION": "removed",
       "EMPTY": "No activity yet."
@@ -70,6 +74,45 @@
         "OTHER": "Other channel"
       }
     },
+    "ACTIVITIES": {
+      "TITLE": "Next activities",
+      "DESCRIPTION": "Schedule the concrete follow-up that moves this item forward.",
+      "LOADING": "Loading activities",
+      "EMPTY": "No activities scheduled yet.",
+      "OVERDUE": "Overdue",
+      "DUE": "Due {date}",
+      "ASSIGNED_TO": "Assigned to {name}",
+      "CARD_DUE": "{type} · {date}",
+      "CARD_OVERDUE": "Overdue {type} · {date}",
+      "EDIT": "Edit",
+      "COMPLETE": "Complete",
+      "CANCEL": "Cancel",
+      "TYPE": {
+        "TASK": "Task",
+        "CALL": "Call",
+        "MESSAGE": "Message",
+        "MEETING": "Meeting",
+        "CUSTOM": "Custom"
+      },
+      "STATUS": {
+        "SCHEDULED": "Scheduled",
+        "COMPLETED": "Completed",
+        "CANCELED": "Canceled"
+      },
+      "FORM": {
+        "TYPE": "Activity type",
+        "DUE_AT": "Due date and time",
+        "TITLE": "What needs to happen?",
+        "TITLE_PLACEHOLDER": "Follow up with the customer",
+        "ASSIGNEE": "Assignee",
+        "UNASSIGNED": "Unassigned",
+        "NOTES": "Notes",
+        "NOTES_PLACEHOLDER": "Optional context for the person doing this",
+        "ADD": "Schedule activity",
+        "SAVE": "Save changes",
+        "DISCARD": "Discard"
+      }
+    },
     "EMPTY_PIPELINES": {
       "TITLE": "Create your first pipeline",
       "DESCRIPTION": "Choose a workflow template before adding pipeline items.",
@@ -106,11 +149,18 @@
       "CREATE_ERROR": "The pipeline item could not be added.",
       "TRANSITION_ERROR": "The item could not be moved. Its previous stage was restored.",
       "TIMELINE_ERROR": "Item history could not be loaded.",
+      "DETAIL_LOAD_ERROR": "Item details could not be loaded.",
       "CONVERSATIONS_LOAD_ERROR": "Conversations for this contact could not be loaded.",
       "CONVERSATION_LINK_SUCCESS": "Conversation linked.",
       "CONVERSATION_LINK_ERROR": "The conversation could not be linked.",
       "CONVERSATION_UNLINK_SUCCESS": "Conversation unlinked.",
-      "CONVERSATION_UNLINK_ERROR": "The conversation could not be unlinked."
+      "CONVERSATION_UNLINK_ERROR": "The conversation could not be unlinked.",
+      "ACTIVITY_CREATE_SUCCESS": "Activity scheduled.",
+      "ACTIVITY_UPDATE_SUCCESS": "Activity updated.",
+      "ACTIVITY_SAVE_ERROR": "The activity could not be saved.",
+      "ACTIVITY_COMPLETE_SUCCESS": "Activity completed.",
+      "ACTIVITY_CANCEL_SUCCESS": "Activity canceled.",
+      "ACTIVITY_STATUS_ERROR": "The activity status could not be changed."
     }
   }
 }
