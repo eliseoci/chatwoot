@@ -6,6 +6,15 @@
     "ADD_ITEM": "Add item",
     "LOADING": "Loading pipeline",
     "EMPTY_STAGE": "No items in this stage",
+    "MOVE": {
+      "DRAG_LABEL": "Drag {title} to another stage",
+      "COMMAND_LABEL": "Move {title} to another stage"
+    },
+    "TIMELINE": {
+      "ACTION": "History",
+      "EVENT": "{actor} moved this item from {from} to {to}.",
+      "EMPTY": "No stage changes yet."
+    },
     "EMPTY_PIPELINES": {
       "TITLE": "Create your first pipeline",
       "DESCRIPTION": "Choose a workflow template before adding pipeline items.",
@@ -39,7 +48,9 @@
     "API": {
       "LOAD_ERROR": "The pipeline board could not be loaded.",
       "CREATE_SUCCESS": "Pipeline item added.",
-      "CREATE_ERROR": "The pipeline item could not be added."
+      "CREATE_ERROR": "The pipeline item could not be added.",
+      "TRANSITION_ERROR": "The item could not be moved. Its previous stage was restored.",
+      "TIMELINE_ERROR": "Stage history could not be loaded."
     }
   }
 }

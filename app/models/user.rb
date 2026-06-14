@@ -113,6 +113,10 @@ class User < ApplicationRecord
            foreign_key: :owner_id,
            inverse_of: :owner,
            dependent: :nullify
+  has_many :pipeline_item_stage_transitions,
+           foreign_key: :actor_id,
+           inverse_of: :actor,
+           dependent: :restrict_with_error
   has_many :team_members, dependent: :destroy_async
   has_many :teams, through: :team_members
   has_many :articles, foreign_key: 'author_id', dependent: :nullify, inverse_of: :author

@@ -1,5 +1,5 @@
 class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseController
-  before_action :fetch_pipeline_item, only: [:show]
+  before_action :fetch_pipeline_item, only: [:show, :timeline, :transition]
   before_action :check_authorization
 
   def index
@@ -9,10 +9,25 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def show; end
 
+  def timeline
+    @transitions = @pipeline_item.stage_transitions
+                                 .includes(:from_stage, :to_stage, :actor)
+                                 .order(created_at: :desc)
+  end
+
   def create
     @pipeline_item = Current.account.pipeline_items.new(pipeline_item_attributes)
     assign_account_scoped_associations
     @pipeline_item.save!
+  end
+
+  def transition
+    @pipeline_item = Pipelines::Items::TransitionStageService.new(
+      pipeline_item: @pipeline_item,
+      target_stage_id: transition_params[:stage_id],
+      actor: Current.user,
+      source: transition_params[:source].presence || 'api'
+    ).perform
   end
 
   private
@@ -51,5 +66,9 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def pipeline_item_attributes
     params.require(:pipeline_item).permit(:title, :priority, :value, :due_date)
+  end
+
+  def transition_params
+    params.require(:transition).permit(:stage_id, :source)
   end
 end

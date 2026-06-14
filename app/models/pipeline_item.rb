@@ -23,6 +23,10 @@ class PipelineItem < ApplicationRecord
   belongs_to :contact
   belongs_to :owner, class_name: 'User', inverse_of: :owned_pipeline_items, optional: true
   belongs_to :team, optional: true
+  has_many :stage_transitions,
+           class_name: 'PipelineItemStageTransition',
+           inverse_of: :pipeline_item,
+           dependent: :destroy
 
   enum :priority, { low: 0, medium: 1, high: 2, urgent: 3 }, prefix: true
 

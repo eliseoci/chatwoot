@@ -307,7 +307,10 @@ Rails.application.routes.draw do
           resources :pipelines, only: [:index, :show, :create] do
             get :templates, on: :collection
           end
-          resources :pipeline_items, only: [:index, :show, :create]
+          resources :pipeline_items, only: [:index, :show, :create] do
+            get :timeline, on: :member
+            patch :transition, on: :member
+          end
 
           # Assignment V2 Routes
           resources :assignment_policies do

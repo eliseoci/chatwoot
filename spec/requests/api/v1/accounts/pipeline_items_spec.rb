@@ -93,4 +93,70 @@ RSpec.describe 'Pipeline Items API', type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  describe 'PATCH /api/v1/accounts/:account_id/pipeline_items/:id/transition' do
+    let(:item) do
+      create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+    end
+
+    it 'requires authentication' do
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/transition"
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'moves the item and records the actor and source' do
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/transition",
+            params: {
+              transition: {
+                stage_id: pipeline.stages.second.id,
+                source: 'board_command'
+              }
+            },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['stage_id']).to eq(pipeline.stages.second.id)
+      expect(item.stage_transitions.last).to have_attributes(actor: agent, source: 'board_command')
+    end
+
+    it 'rejects a stage from another pipeline' do
+      patch "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/transition",
+            params: {
+              transition: {
+                stage_id: create(:pipeline_stage).id,
+                source: 'api'
+              }
+            },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(item.reload.stage).to eq(pipeline.stages.first)
+    end
+  end
+
+  describe 'GET /api/v1/accounts/:account_id/pipeline_items/:id/timeline' do
+    it 'returns newest stage transitions first' do
+      item = create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+      service = Pipelines::Items::TransitionStageService
+      service.new(
+        pipeline_item: item,
+        target_stage_id: pipeline.stages.second.id,
+        actor: agent,
+        source: 'api'
+      ).perform
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/timeline",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.first).to include('source' => 'api')
+      expect(response.parsed_body.first.dig('actor', 'id')).to eq(agent.id)
+      expect(response.parsed_body.first.dig('from_stage', 'id')).to eq(pipeline.stages.first.id)
+      expect(response.parsed_body.first.dig('to_stage', 'id')).to eq(pipeline.stages.second.id)
+    end
+  end
 end

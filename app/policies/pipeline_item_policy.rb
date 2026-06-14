@@ -10,4 +10,12 @@ class PipelineItemPolicy < ApplicationPolicy
   def create?
     true
   end
+
+  def timeline?
+    true
+  end
+
+  def transition?
+    true
+  end
 end

@@ -115,6 +115,8 @@ en:
     pipeline_item:
       account_mismatch: must belong to the same account as the pipeline item
       stage_mismatch: must belong to the selected pipeline
+    pipeline_item_stage_transition:
+      mismatch: must belong to the same account and pipeline as the item
     pipeline_stage:
       account_mismatch: must belong to the same account as its pipeline
     validations:

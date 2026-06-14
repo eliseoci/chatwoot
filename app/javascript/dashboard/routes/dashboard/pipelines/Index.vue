@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
+import Draggable from 'vuedraggable';
 
 import AgentsAPI from 'dashboard/api/agents';
 import ContactAPI from 'dashboard/api/contacts';
@@ -25,9 +26,12 @@ const contacts = ref([]);
 const agents = ref([]);
 const teams = ref([]);
 const activePipelineId = ref(null);
+const columns = ref([]);
 const isLoading = ref(true);
 const isCreating = ref(false);
 const dialogRef = ref(null);
+const expandedTimelineItems = ref([]);
+const timelines = reactive({});
 
 const form = reactive({
   title: '',
@@ -42,10 +46,6 @@ const form = reactive({
 
 const activePipeline = computed(() =>
   pipelines.value.find(pipeline => pipeline.id === activePipelineId.value)
-);
-
-const columns = computed(() =>
-  groupItemsByStage(activePipeline.value?.stages || [], items.value)
 );
 
 const isCreateDisabled = computed(() => !form.stageId || !form.contactId);
@@ -73,9 +73,23 @@ const formatDueDate = dueDate =>
     year: 'numeric',
   }).format(new Date(`${dueDate}T00:00:00`));
 
+const formatTransitionTime = createdAt =>
+  new Intl.DateTimeFormat(locale.value, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(createdAt));
+
+const syncColumns = () => {
+  columns.value = groupItemsByStage(
+    activePipeline.value?.stages || [],
+    items.value
+  );
+};
+
 const loadItems = async () => {
   if (!activePipelineId.value) {
     items.value = [];
+    syncColumns();
     return;
   }
 
@@ -83,6 +97,7 @@ const loadItems = async () => {
     pipelineId: activePipelineId.value,
   });
   items.value = response.data;
+  syncColumns();
 };
 
 const loadBoard = async () => {
@@ -152,12 +167,74 @@ const createItem = async () => {
       })
     );
     items.value.unshift(response.data);
+    syncColumns();
     dialogRef.value?.close();
     useAlert(t('PIPELINES_BOARD.API.CREATE_SUCCESS'));
   } catch (error) {
     useAlert(t('PIPELINES_BOARD.API.CREATE_ERROR'));
   } finally {
     isCreating.value = false;
+  }
+};
+
+const transitionItem = async (item, targetStageId, source, optimistic = true) => {
+  const previousStageId = item.stage_id;
+  if (previousStageId === targetStageId) return;
+
+  item.stage_id = targetStageId;
+  if (optimistic) syncColumns();
+
+  try {
+    const response = await PipelineItemsAPI.transition(item.id, {
+      stageId: targetStageId,
+      source,
+    });
+    Object.assign(item, response.data);
+    expandedTimelineItems.value = expandedTimelineItems.value.filter(
+      itemId => itemId !== item.id
+    );
+    timelines[item.id] = null;
+  } catch (error) {
+    item.stage_id = previousStageId;
+    syncColumns();
+    useAlert(t('PIPELINES_BOARD.API.TRANSITION_ERROR'));
+  }
+};
+
+const handleDragChange = (event, column) => {
+  if (!event.added) return;
+
+  transitionItem(event.added.element, column.id, 'board_drag', false);
+};
+
+const moveItemWithCommand = (item, event) => {
+  transitionItem(
+    item,
+    Number(event.target.value),
+    'board_command',
+    true
+  );
+};
+
+const toggleTimeline = async item => {
+  if (expandedTimelineItems.value.includes(item.id)) {
+    expandedTimelineItems.value = expandedTimelineItems.value.filter(
+      itemId => itemId !== item.id
+    );
+    return;
+  }
+
+  expandedTimelineItems.value.push(item.id);
+  if (timelines[item.id]) return;
+
+  try {
+    const response = await PipelineItemsAPI.timeline(item.id);
+    timelines[item.id] = response.data;
+  } catch (error) {
+    expandedTimelineItems.value = expandedTimelineItems.value.filter(
+      itemId => itemId !== item.id
+    );
+    useAlert(t('PIPELINES_BOARD.API.TIMELINE_ERROR'));
   }
 };
 
@@ -282,63 +359,143 @@ onMounted(loadBoard);
           </span>
         </div>
 
-        <div class="flex min-h-24 flex-col gap-2 rounded-xl bg-n-alpha-black2 p-2">
-          <article
-            v-for="item in column.items"
-            :key="item.id"
-            class="flex flex-col gap-3 rounded-lg bg-n-solid-1 p-3 outline outline-1 -outline-offset-1 outline-n-weak"
-          >
-            <div>
-              <h3 class="text-heading-3 text-n-slate-12">
-                {{ item.display_title }}
-              </h3>
-              <p
-                v-if="item.title && item.contact.name"
-                class="mb-0 truncate text-xs text-n-slate-11"
-              >
-                {{ item.contact.name }}
-              </p>
-            </div>
-
-            <div class="flex flex-wrap gap-1.5">
-              <span
-                v-if="item.priority"
-                class="rounded-md bg-n-amber-3 px-2 py-1 text-xs text-n-amber-11"
-              >
-                {{ priorityLabel(item.priority) }}
-              </span>
-              <span
-                v-if="item.value !== null"
-                class="rounded-md bg-n-alpha-black2 px-2 py-1 text-xs text-n-slate-11"
-              >
-                {{ formatValue(item.value) }}
-              </span>
-              <span
-                v-if="item.due_date"
-                class="rounded-md bg-n-alpha-black2 px-2 py-1 text-xs text-n-slate-11"
-              >
-                {{ formatDueDate(item.due_date) }}
-              </span>
-            </div>
-
-            <div
-              v-if="item.owner || item.team"
-              class="flex items-center gap-1.5 text-xs text-n-slate-10"
+        <Draggable
+          v-model="column.items"
+          :group="{ name: 'pipeline-items' }"
+          item-key="id"
+          handle=".pipeline-item-drag-handle"
+          class="flex min-h-24 flex-col gap-2 rounded-xl bg-n-alpha-black2 p-2"
+          ghost-class="opacity-50"
+          @change="handleDragChange($event, column)"
+        >
+          <template #item="{ element: item }">
+            <article
+              class="flex flex-col gap-3 rounded-lg bg-n-solid-1 p-3 outline outline-1 -outline-offset-1 outline-n-weak"
             >
-              <Icon icon="i-lucide-user-round" class="size-3.5" />
-              <span v-if="item.owner">{{ item.owner.name }}</span>
-              <span v-if="item.owner && item.team">·</span>
-              <span v-if="item.team">{{ item.team.name }}</span>
-            </div>
-          </article>
+              <div class="flex items-start gap-2">
+                <button
+                  type="button"
+                  class="pipeline-item-drag-handle mt-0.5 cursor-grab text-n-slate-9 hover:text-n-slate-11"
+                  :aria-label="
+                    $t('PIPELINES_BOARD.MOVE.DRAG_LABEL', {
+                      title: item.display_title,
+                    })
+                  "
+                >
+                  <Icon icon="i-lucide-grip-vertical" class="size-4" />
+                </button>
+                <div class="min-w-0 flex-1">
+                  <h3 class="text-heading-3 text-n-slate-12">
+                    {{ item.display_title }}
+                  </h3>
+                  <p
+                    v-if="item.title && item.contact.name"
+                    class="mb-0 truncate text-xs text-n-slate-11"
+                  >
+                    {{ item.contact.name }}
+                  </p>
+                </div>
+              </div>
 
-          <p
-            v-if="!column.items.length"
-            class="mb-0 px-2 py-6 text-center text-xs text-n-slate-10"
-          >
-            {{ $t('PIPELINES_BOARD.EMPTY_STAGE') }}
-          </p>
-        </div>
+              <div class="flex flex-wrap gap-1.5">
+                <span
+                  v-if="item.priority"
+                  class="rounded-md bg-n-amber-3 px-2 py-1 text-xs text-n-amber-11"
+                >
+                  {{ priorityLabel(item.priority) }}
+                </span>
+                <span
+                  v-if="item.value !== null"
+                  class="rounded-md bg-n-alpha-black2 px-2 py-1 text-xs text-n-slate-11"
+                >
+                  {{ formatValue(item.value) }}
+                </span>
+                <span
+                  v-if="item.due_date"
+                  class="rounded-md bg-n-alpha-black2 px-2 py-1 text-xs text-n-slate-11"
+                >
+                  {{ formatDueDate(item.due_date) }}
+                </span>
+              </div>
+
+              <div
+                v-if="item.owner || item.team"
+                class="flex items-center gap-1.5 text-xs text-n-slate-10"
+              >
+                <Icon icon="i-lucide-user-round" class="size-3.5" />
+                <span v-if="item.owner">{{ item.owner.name }}</span>
+                <span v-if="item.owner && item.team">·</span>
+                <span v-if="item.team">{{ item.team.name }}</span>
+              </div>
+
+              <div class="flex items-center gap-2 border-t border-n-weak pt-2">
+                <select
+                  :value="item.stage_id"
+                  :aria-label="
+                    $t('PIPELINES_BOARD.MOVE.COMMAND_LABEL', {
+                      title: item.display_title,
+                    })
+                  "
+                  class="h-7 min-w-0 flex-1 rounded-md border-0 bg-n-alpha-black2 px-2 text-xs text-n-slate-11 outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                  @change="moveItemWithCommand(item, $event)"
+                >
+                  <option
+                    v-for="stage in activePipeline.stages"
+                    :key="stage.id"
+                    :value="stage.id"
+                  >
+                    {{ stage.name }}
+                  </option>
+                </select>
+                <Button
+                  variant="ghost"
+                  color="slate"
+                  size="xs"
+                  icon="i-lucide-history"
+                  :label="$t('PIPELINES_BOARD.TIMELINE.ACTION')"
+                  @click="toggleTimeline(item)"
+                />
+              </div>
+
+              <ol
+                v-if="expandedTimelineItems.includes(item.id)"
+                class="flex flex-col gap-2 border-t border-n-weak pt-2"
+              >
+                <li
+                  v-for="transition in timelines[item.id] || []"
+                  :key="transition.id"
+                  class="text-xs text-n-slate-11"
+                >
+                  {{
+                    $t('PIPELINES_BOARD.TIMELINE.EVENT', {
+                      from: transition.from_stage.name,
+                      to: transition.to_stage.name,
+                      actor: transition.actor.name,
+                    })
+                  }}
+                  <span class="block text-n-slate-9">
+                    {{ formatTransitionTime(transition.created_at) }}
+                  </span>
+                </li>
+                <li
+                  v-if="timelines[item.id]?.length === 0"
+                  class="text-xs text-n-slate-9"
+                >
+                  {{ $t('PIPELINES_BOARD.TIMELINE.EMPTY') }}
+                </li>
+              </ol>
+            </article>
+          </template>
+
+          <template #footer>
+            <p
+              v-if="!column.items.length"
+              class="mb-0 px-2 py-6 text-center text-xs text-n-slate-10"
+            >
+              {{ $t('PIPELINES_BOARD.EMPTY_STAGE') }}
+            </p>
+          </template>
+        </Draggable>
       </section>
     </main>
 

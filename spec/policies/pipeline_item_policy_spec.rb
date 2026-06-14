@@ -14,7 +14,7 @@ RSpec.describe PipelineItemPolicy, type: :policy do
     { user: agent, account: account, account_user: agent.account_users.find_by(account: account) }
   end
 
-  permissions :index?, :show?, :create? do
+  permissions :index?, :show?, :create?, :timeline?, :transition? do
     it { is_expected.to permit(administrator_context, pipeline_item) }
     it { is_expected.to permit(agent_context, pipeline_item) }
   end

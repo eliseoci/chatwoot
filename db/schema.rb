@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_001000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_002000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1282,6 +1282,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_001000) do
     t.check_constraint "value IS NULL OR value >= 0::numeric", name: "pipeline_items_value_non_negative"
   end
 
+  create_table "pipeline_item_stage_transitions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_item_id", null: false
+    t.bigint "from_stage_id", null: false
+    t.bigint "to_stage_id", null: false
+    t.bigint "actor_id", null: false
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_item_stage_transitions_on_account_id"
+    t.index ["actor_id"], name: "index_pipeline_item_stage_transitions_on_actor_id"
+    t.index ["from_stage_id"], name: "index_pipeline_item_stage_transitions_on_from_stage_id"
+    t.index ["pipeline_item_id", "created_at"], name: "index_pipeline_item_transitions_on_item_and_created_at"
+    t.index ["pipeline_item_id"], name: "index_pipeline_item_stage_transitions_on_pipeline_item_id"
+    t.index ["to_stage_id"], name: "index_pipeline_item_stage_transitions_on_to_stage_id"
+  end
+
   create_table "pipelines", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.string "name", null: false
@@ -1382,6 +1399,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_001000) do
   add_foreign_key "pipeline_items", "pipelines"
   add_foreign_key "pipeline_items", "teams", on_delete: :nullify
   add_foreign_key "pipeline_items", "users", column: "owner_id", on_delete: :nullify
+  add_foreign_key "pipeline_item_stage_transitions", "accounts"
+  add_foreign_key "pipeline_item_stage_transitions", "pipeline_items"
+  add_foreign_key "pipeline_item_stage_transitions", "pipeline_stages", column: "from_stage_id"
+  add_foreign_key "pipeline_item_stage_transitions", "pipeline_stages", column: "to_stage_id"
+  add_foreign_key "pipeline_item_stage_transitions", "users", column: "actor_id"
   add_foreign_key "pipeline_stages", "accounts"
   add_foreign_key "pipeline_stages", "pipelines"
   add_foreign_key "pipelines", "accounts"

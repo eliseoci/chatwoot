@@ -17,6 +17,16 @@ class PipelineStage < ApplicationRecord
   belongs_to :account
   belongs_to :pipeline, inverse_of: :stages
   has_many :items, class_name: 'PipelineItem', inverse_of: :stage, dependent: :restrict_with_error
+  has_many :outgoing_item_transitions,
+           class_name: 'PipelineItemStageTransition',
+           foreign_key: :from_stage_id,
+           inverse_of: :from_stage,
+           dependent: :restrict_with_error
+  has_many :incoming_item_transitions,
+           class_name: 'PipelineItemStageTransition',
+           foreign_key: :to_stage_id,
+           inverse_of: :to_stage,
+           dependent: :restrict_with_error
 
   validates :name, presence: true
   validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 },
