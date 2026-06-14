@@ -27,6 +27,15 @@ class PipelineItem < ApplicationRecord
            class_name: 'PipelineItemStageTransition',
            inverse_of: :pipeline_item,
            dependent: :destroy
+  has_many :conversation_links,
+           class_name: 'PipelineItemConversation',
+           inverse_of: :pipeline_item,
+           dependent: :destroy
+  has_many :linked_conversations, through: :conversation_links, source: :conversation
+  has_many :events,
+           class_name: 'PipelineItemEvent',
+           inverse_of: :pipeline_item,
+           dependent: :destroy
 
   enum :priority, { low: 0, medium: 1, high: 2, urgent: 3 }, prefix: true
 

@@ -18,4 +18,16 @@ class PipelineItemPolicy < ApplicationPolicy
   def transition?
     true
   end
+
+  def linked_conversations?
+    true
+  end
+
+  def link_conversation?
+    true
+  end
+
+  def unlink_conversation?
+    true
+  end
 end

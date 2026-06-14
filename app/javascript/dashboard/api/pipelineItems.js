@@ -22,6 +22,30 @@ class PipelineItemsAPI extends ApiClient {
   timeline(id) {
     return axios.get(`${this.url}/${id}/timeline`);
   }
+
+  linkedConversations(id) {
+    return axios.get(`${this.url}/${id}/linked_conversations`);
+  }
+
+  linkConversation(id, { conversationId, source }) {
+    return axios.post(`${this.url}/${id}/link_conversation`, {
+      conversation_link: {
+        conversation_id: conversationId,
+        source,
+      },
+    });
+  }
+
+  unlinkConversation(id, { conversationId, source }) {
+    return axios.delete(`${this.url}/${id}/unlink_conversation`, {
+      data: {
+        conversation_link: {
+          conversation_id: conversationId,
+          source,
+        },
+      },
+    });
+  }
 }
 
 export default new PipelineItemsAPI();

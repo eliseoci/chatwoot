@@ -13,6 +13,9 @@ RSpec.describe PipelineItem do
     it { is_expected.to belong_to(:contact) }
     it { is_expected.to belong_to(:owner).class_name('User').optional }
     it { is_expected.to belong_to(:team).optional }
+    it { is_expected.to have_many(:conversation_links).class_name('PipelineItemConversation').dependent(:destroy) }
+    it { is_expected.to have_many(:linked_conversations).through(:conversation_links).source(:conversation) }
+    it { is_expected.to have_many(:events).class_name('PipelineItemEvent').dependent(:destroy) }
   end
 
   describe 'validations' do

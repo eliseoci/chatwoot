@@ -83,6 +83,33 @@ RSpec.describe 'Pipeline Items API', type: :request do
   end
 
   describe 'GET /api/v1/accounts/:account_id/pipeline_items/:id' do
+    it 'returns linked conversation summaries without message history' do
+      item = create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+      conversation = create(:conversation, :with_assignee, account: account, contact: contact)
+      create(:inbox_member, user: agent, inbox: conversation.inbox)
+      create(
+        :pipeline_item_conversation,
+        account: account,
+        pipeline_item: item,
+        conversation: conversation,
+        linked_by: agent
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      summary = response.parsed_body['linked_conversations'].first
+      expect(summary).to include(
+        'id' => conversation.display_id,
+        'status' => conversation.status
+      )
+      expect(summary.dig('inbox', 'name')).to eq(conversation.inbox.name)
+      expect(summary.dig('assignee', 'id')).to eq(conversation.assignee.id)
+      expect(summary).not_to have_key('messages')
+    end
+
     it 'does not expose an item from another account' do
       other_item = create(:pipeline_item)
 
@@ -91,6 +118,147 @@ RSpec.describe 'Pipeline Items API', type: :request do
           as: :json
 
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe 'conversation links' do
+    let(:item) do
+      create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+    end
+    let(:conversation) { create(:conversation, account: account, contact: contact) }
+
+    before { create(:inbox_member, user: agent, inbox: conversation.inbox) }
+
+    it 'links a compatible conversation and records the actor' do
+      expect do
+        post "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/link_conversation",
+             params: {
+               conversation_link: {
+                 conversation_id: conversation.display_id,
+                 source: 'item_detail'
+               }
+             },
+             headers: agent.create_new_auth_token,
+             as: :json
+      end.to change(item.conversation_links, :count).by(1)
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['id']).to eq(conversation.display_id)
+      expect(item.events.last).to have_attributes(
+        event_type: 'conversation_linked',
+        actor: agent,
+        source: 'item_detail'
+      )
+    end
+
+    it 'treats duplicate links idempotently' do
+      create(
+        :pipeline_item_conversation,
+        account: account,
+        pipeline_item: item,
+        conversation: conversation,
+        linked_by: agent
+      )
+
+      post "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/link_conversation",
+           params: { conversation_link: { conversation_id: conversation.display_id } },
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(item.conversation_links.count).to eq(1)
+    end
+
+    it 'rejects a conversation for another contact' do
+      incompatible_conversation = create(:conversation, account: account)
+      create(:inbox_member, user: agent, inbox: incompatible_conversation.inbox)
+
+      post "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/link_conversation",
+           params: { conversation_link: { conversation_id: incompatible_conversation.display_id } },
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(item.conversation_links).to be_empty
+    end
+
+    it 'rejects a conversation the agent cannot access' do
+      restricted_conversation = create(:conversation, account: account, contact: contact)
+
+      post "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/link_conversation",
+           params: { conversation_link: { conversation_id: restricted_conversation.display_id } },
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(item.conversation_links).to be_empty
+    end
+
+    it 'does not expose a conversation from another account' do
+      other_account = create(:account)
+      other_conversation = create_list(:conversation, 2, account: other_account).last
+
+      post "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/link_conversation",
+           params: { conversation_link: { conversation_id: other_conversation.display_id } },
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(item.conversation_links).to be_empty
+    end
+
+    it 'does not list linked conversations outside the agent inbox access' do
+      restricted_conversation = create(:conversation, account: account, contact: contact)
+      create(
+        :pipeline_item_conversation,
+        account: account,
+        pipeline_item: item,
+        conversation: restricted_conversation,
+        linked_by: agent
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/linked_conversations",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to be_empty
+    end
+
+    it 'lists and unlinks conversations without deleting them' do
+      create(
+        :pipeline_item_conversation,
+        account: account,
+        pipeline_item: item,
+        conversation: conversation,
+        linked_by: agent
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/linked_conversations",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.pluck('id')).to eq([conversation.display_id])
+
+      delete "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/unlink_conversation",
+             params: {
+               conversation_link: {
+                 conversation_id: conversation.display_id,
+                 source: 'item_detail'
+               }
+             },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+      expect(response).to have_http_status(:no_content)
+      expect(item.reload.conversation_links).to be_empty
+      expect(conversation.reload).to be_present
+      expect(item.events.last).to have_attributes(
+        event_type: 'conversation_unlinked',
+        actor: agent,
+        source: 'item_detail'
+      )
     end
   end
 
@@ -157,6 +325,37 @@ RSpec.describe 'Pipeline Items API', type: :request do
       expect(response.parsed_body.first.dig('actor', 'id')).to eq(agent.id)
       expect(response.parsed_body.first.dig('from_stage', 'id')).to eq(pipeline.stages.first.id)
       expect(response.parsed_body.first.dig('to_stage', 'id')).to eq(pipeline.stages.second.id)
+    end
+
+    it 'returns conversation link and unlink audit events' do
+      item = create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+      conversation = create(:conversation, account: account, contact: contact)
+      create(:inbox_member, user: agent, inbox: conversation.inbox)
+      link_service = Pipelines::Items::LinkConversationService
+      unlink_service = Pipelines::Items::UnlinkConversationService
+
+      link_service.new(
+        pipeline_item: item,
+        conversation: conversation,
+        actor: agent,
+        source: 'item_detail'
+      ).perform
+      unlink_service.new(
+        pipeline_item: item,
+        conversation: conversation,
+        actor: agent,
+        source: 'item_detail'
+      ).perform
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/timeline",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.pluck('event_type')).to eq(
+        %w[conversation_unlinked conversation_linked]
+      )
+      expect(response.parsed_body.first.dig('conversation', 'id')).to eq(conversation.display_id)
     end
   end
 end

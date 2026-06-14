@@ -167,6 +167,13 @@ Pipelines must not:
   stage must not declare one.
 - Pipeline Item, stage, contact, company, owner, team, and linked conversations
   must belong to the same account.
+- `PipelineItemConversation` is the current-link join record. It never copies or
+  owns conversation status, assignment, labels, messages, or channel state.
+- A linked conversation must belong to the Pipeline Item's primary contact.
+- Conversation link and unlink operations emit immutable `PipelineItemEvent`
+  audit records before the transaction commits.
+- Destroying a Pipeline Item removes only its join and audit records; it never
+  deletes a Chatwoot conversation.
 - An item stage belongs to the item's pipeline.
 - Stage transitions are append-only audit records.
 - Automatic conversation intake is idempotent.

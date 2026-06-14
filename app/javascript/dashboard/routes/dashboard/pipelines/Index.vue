@@ -14,6 +14,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
+import PipelineItemDetails from './components/PipelineItemDetails.vue';
 import { buildPipelineItemPayload, groupItemsByStage } from './helpers/board';
 
 const route = useRoute();
@@ -32,6 +33,11 @@ const isCreating = ref(false);
 const dialogRef = ref(null);
 const expandedTimelineItems = ref([]);
 const timelines = reactive({});
+const selectedItem = ref(null);
+const candidateConversations = ref([]);
+const isLoadingCandidates = ref(false);
+const activeConversationId = ref(null);
+let conversationOperationSequence = 0;
 
 const form = reactive({
   title: '',
@@ -78,6 +84,13 @@ const formatTransitionTime = createdAt =>
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(createdAt));
+
+const timelineActor = transition =>
+  transition.actor?.name || t('PIPELINES_BOARD.TIMELINE.SYSTEM_ACTOR');
+
+const timelineConversation = transition =>
+  transition.conversation?.id ||
+  t('PIPELINES_BOARD.TIMELINE.REMOVED_CONVERSATION');
 
 const syncColumns = () => {
   columns.value = groupItemsByStage(
@@ -166,7 +179,10 @@ const createItem = async () => {
         dueDate: form.dueDate,
       })
     );
-    items.value.unshift(response.data);
+    items.value.unshift({
+      ...response.data,
+      linked_conversations: [],
+    });
     syncColumns();
     dialogRef.value?.close();
     useAlert(t('PIPELINES_BOARD.API.CREATE_SUCCESS'));
@@ -236,6 +252,109 @@ const toggleTimeline = async item => {
     );
     useAlert(t('PIPELINES_BOARD.API.TIMELINE_ERROR'));
   }
+};
+
+const openItemDetails = async item => {
+  item.linked_conversations ||= [];
+  selectedItem.value = item;
+  candidateConversations.value = [];
+  isLoadingCandidates.value = true;
+  const itemId = item.id;
+
+  try {
+    const [conversationsResponse, linkedConversationsResponse] =
+      await Promise.all([
+        ContactAPI.getConversations(item.contact.id),
+        PipelineItemsAPI.linkedConversations(item.id),
+      ]);
+    if (selectedItem.value?.id !== itemId) return;
+    candidateConversations.value = conversationsResponse.data.payload;
+    item.linked_conversations = linkedConversationsResponse.data;
+  } catch (error) {
+    if (selectedItem.value?.id !== itemId) return;
+    useAlert(t('PIPELINES_BOARD.API.CONVERSATIONS_LOAD_ERROR'));
+  } finally {
+    if (selectedItem.value?.id === itemId) {
+      isLoadingCandidates.value = false;
+    }
+  }
+};
+
+const closeItemDetails = () => {
+  conversationOperationSequence += 1;
+  selectedItem.value = null;
+  candidateConversations.value = [];
+  activeConversationId.value = null;
+};
+
+const linkConversation = async conversationId => {
+  if (!selectedItem.value) return;
+
+  const item = selectedItem.value;
+  const operationId = ++conversationOperationSequence;
+  activeConversationId.value = conversationId;
+  try {
+    const response = await PipelineItemsAPI.linkConversation(item.id, {
+      conversationId,
+      source: 'item_detail',
+    });
+    if (
+      !item.linked_conversations.some(
+        conversation => conversation.id === response.data.id
+      )
+    ) {
+      item.linked_conversations.unshift(response.data);
+    }
+    timelines[item.id] = null;
+    expandedTimelineItems.value = expandedTimelineItems.value.filter(
+      itemId => itemId !== item.id
+    );
+    useAlert(t('PIPELINES_BOARD.API.CONVERSATION_LINK_SUCCESS'));
+  } catch (error) {
+    useAlert(t('PIPELINES_BOARD.API.CONVERSATION_LINK_ERROR'));
+  } finally {
+    if (operationId === conversationOperationSequence) {
+      activeConversationId.value = null;
+    }
+  }
+};
+
+const unlinkConversation = async conversationId => {
+  if (!selectedItem.value) return;
+
+  const item = selectedItem.value;
+  const operationId = ++conversationOperationSequence;
+  activeConversationId.value = conversationId;
+  try {
+    await PipelineItemsAPI.unlinkConversation(item.id, {
+      conversationId,
+      source: 'item_detail',
+    });
+    item.linked_conversations = item.linked_conversations.filter(
+      conversation => conversation.id !== conversationId
+    );
+    timelines[item.id] = null;
+    expandedTimelineItems.value = expandedTimelineItems.value.filter(
+      itemId => itemId !== item.id
+    );
+    useAlert(t('PIPELINES_BOARD.API.CONVERSATION_UNLINK_SUCCESS'));
+  } catch (error) {
+    useAlert(t('PIPELINES_BOARD.API.CONVERSATION_UNLINK_ERROR'));
+  } finally {
+    if (operationId === conversationOperationSequence) {
+      activeConversationId.value = null;
+    }
+  }
+};
+
+const openConversation = conversationId => {
+  router.push({
+    name: 'inbox_conversation',
+    params: {
+      accountId: route.params.accountId,
+      conversation_id: conversationId,
+    },
+  });
 };
 
 const changePipeline = async () => {
@@ -451,6 +570,14 @@ onMounted(loadBoard);
                   variant="ghost"
                   color="slate"
                   size="xs"
+                  icon="i-lucide-panel-right-open"
+                  :label="$t('PIPELINES_BOARD.DETAIL.ACTION')"
+                  @click="openItemDetails(item)"
+                />
+                <Button
+                  variant="ghost"
+                  color="slate"
+                  size="xs"
                   icon="i-lucide-history"
                   :label="$t('PIPELINES_BOARD.TIMELINE.ACTION')"
                   @click="toggleTimeline(item)"
@@ -466,13 +593,31 @@ onMounted(loadBoard);
                   :key="transition.id"
                   class="text-xs text-n-slate-11"
                 >
-                  {{
-                    $t('PIPELINES_BOARD.TIMELINE.EVENT', {
-                      from: transition.from_stage.name,
-                      to: transition.to_stage.name,
-                      actor: transition.actor.name,
-                    })
-                  }}
+                  <template v-if="transition.event_type === 'stage_transition'">
+                    {{
+                      $t('PIPELINES_BOARD.TIMELINE.STAGE_EVENT', {
+                        from: transition.from_stage.name,
+                        to: transition.to_stage.name,
+                        actor: timelineActor(transition),
+                      })
+                    }}
+                  </template>
+                  <template v-else-if="transition.event_type === 'conversation_linked'">
+                    {{
+                      $t('PIPELINES_BOARD.TIMELINE.CONVERSATION_LINKED', {
+                        id: timelineConversation(transition),
+                        actor: timelineActor(transition),
+                      })
+                    }}
+                  </template>
+                  <template v-else>
+                    {{
+                      $t('PIPELINES_BOARD.TIMELINE.CONVERSATION_UNLINKED', {
+                        id: timelineConversation(transition),
+                        actor: timelineActor(transition),
+                      })
+                    }}
+                  </template>
                   <span class="block text-n-slate-9">
                     {{ formatTransitionTime(transition.created_at) }}
                   </span>
@@ -614,5 +759,17 @@ onMounted(loadBoard);
         />
       </div>
     </Dialog>
+
+    <PipelineItemDetails
+      v-if="selectedItem"
+      :item="selectedItem"
+      :candidate-conversations="candidateConversations"
+      :is-loading-candidates="isLoadingCandidates"
+      :active-conversation-id="activeConversationId"
+      @close="closeItemDetails"
+      @link-conversation="linkConversation"
+      @unlink-conversation="unlinkConversation"
+      @open-conversation="openConversation"
+    />
   </div>
 </template>

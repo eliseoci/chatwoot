@@ -1,5 +1,6 @@
 class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseController
-  before_action :fetch_pipeline_item, only: [:show, :timeline, :transition]
+  before_action :fetch_pipeline_item,
+                only: [:show, :timeline, :transition, :linked_conversations, :link_conversation, :unlink_conversation]
   before_action :check_authorization
 
   def index
@@ -7,12 +8,18 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
     @pipeline_items = @pipeline_items.where(pipeline: fetch_pipeline) if params[:pipeline_id].present?
   end
 
-  def show; end
+  def show
+    @conversation_links = authorized_conversation_links
+  end
 
   def timeline
     @transitions = @pipeline_item.stage_transitions
                                  .includes(:from_stage, :to_stage, :actor)
                                  .order(created_at: :desc)
+    @events = @pipeline_item.events.includes(:conversation, :actor).order(created_at: :desc)
+    @visible_conversation_ids = @events.filter_map(&:conversation).select do |conversation|
+      policy(conversation).show?
+    end.to_set(&:id)
   end
 
   def create
@@ -30,11 +37,35 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
     ).perform
   end
 
+  def linked_conversations
+    @conversation_links = authorized_conversation_links
+  end
+
+  def link_conversation
+    @conversation_link = Pipelines::Items::LinkConversationService.new(
+      pipeline_item: @pipeline_item,
+      conversation: fetch_conversation,
+      actor: Current.user,
+      source: conversation_params[:source].presence || 'api'
+    ).perform
+  end
+
+  def unlink_conversation
+    Pipelines::Items::UnlinkConversationService.new(
+      pipeline_item: @pipeline_item,
+      conversation: fetch_conversation,
+      actor: Current.user,
+      source: conversation_params[:source].presence || 'api'
+    ).perform
+    head :no_content
+  end
+
   private
 
   def pipeline_items_scope
     Current.account.pipeline_items
-           .includes(:pipeline, :stage, :contact, :owner, :team)
+           .includes(:pipeline, :stage, :contact, :owner, :team,
+                     conversation_links: [:linked_by, { conversation: [:inbox, :assignee] }])
            .order(created_at: :desc)
   end
 
@@ -44,6 +75,22 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def fetch_pipeline
     Current.account.pipelines.find(params[:pipeline_id].presence || params.dig(:pipeline_item, :pipeline_id))
+  end
+
+  def fetch_conversation
+    conversation = Current.account.conversations.find_by!(display_id: conversation_params[:conversation_id])
+    authorize conversation, :show?
+    conversation
+  end
+
+  def conversation_links_scope
+    @pipeline_item.conversation_links
+                  .includes(:linked_by, conversation: [:inbox, :assignee])
+                  .order(created_at: :desc)
+  end
+
+  def authorized_conversation_links
+    conversation_links_scope.select { |conversation_link| policy(conversation_link.conversation).show? }
   end
 
   def assign_account_scoped_associations
@@ -70,5 +117,9 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def transition_params
     params.require(:transition).permit(:stage_id, :source)
+  end
+
+  def conversation_params
+    params.require(:conversation_link).permit(:conversation_id, :source)
   end
 end

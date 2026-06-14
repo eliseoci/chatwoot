@@ -310,6 +310,9 @@ Rails.application.routes.draw do
           resources :pipeline_items, only: [:index, :show, :create] do
             get :timeline, on: :member
             patch :transition, on: :member
+            get :linked_conversations, on: :member
+            post :link_conversation, on: :member
+            delete :unlink_conversation, on: :member
           end
 
           # Assignment V2 Routes
