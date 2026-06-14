@@ -2,60 +2,60 @@ class Pipelines::Templates
   DEFAULT_COLOR = '#6B7280'.freeze
 
   DEFINITIONS = {
-      'sales' => {
-        stages: [
-          { key: 'new_lead' },
-          { key: 'qualified' },
-          { key: 'proposal' },
-          { key: 'won', terminal: true, outcome_key: 'won' },
-          { key: 'lost', terminal: true, outcome_key: 'lost' }
-        ]
-      },
-      'support' => {
-        stages: [
-          { key: 'new' },
-          { key: 'investigating' },
-          { key: 'waiting' },
-          { key: 'resolved', terminal: true, outcome_key: 'completed' }
-        ]
-      },
-      'recruitment' => {
-        stages: [
-          { key: 'applied' },
-          { key: 'screening' },
-          { key: 'interview' },
-          { key: 'hired', terminal: true, outcome_key: 'hired' },
-          { key: 'rejected', terminal: true, outcome_key: 'rejected' }
-        ]
-      },
-      'onboarding' => {
-        stages: [
-          { key: 'new_customer' },
-          { key: 'setup' },
-          { key: 'training' },
-          { key: 'live', terminal: true, outcome_key: 'completed' }
-        ]
-      },
-      'collections' => {
-        stages: [
-          { key: 'new_account' },
-          { key: 'contacted' },
-          { key: 'payment_plan' },
-          { key: 'paid', terminal: true, outcome_key: 'paid' },
-          { key: 'escalated', terminal: true, outcome_key: 'escalated' }
-        ]
-      },
-      'real_estate' => {
-        stages: [
-          { key: 'new_inquiry' },
-          { key: 'qualified' },
-          { key: 'viewing' },
-          { key: 'offer' },
-          { key: 'closed', terminal: true, outcome_key: 'won' },
-          { key: 'lost', terminal: true, outcome_key: 'lost' }
-        ]
-      },
-      'custom' => { stages: [] }
+    'sales' => {
+      stages: [
+        { key: 'new_lead' },
+        { key: 'qualified' },
+        { key: 'proposal' },
+        { key: 'won', terminal: true, outcome_key: 'won' },
+        { key: 'lost', terminal: true, outcome_key: 'lost' }
+      ]
+    },
+    'support' => {
+      stages: [
+        { key: 'new' },
+        { key: 'investigating' },
+        { key: 'waiting' },
+        { key: 'resolved', terminal: true, outcome_key: 'completed' }
+      ]
+    },
+    'recruitment' => {
+      stages: [
+        { key: 'applied' },
+        { key: 'screening' },
+        { key: 'interview' },
+        { key: 'hired', terminal: true, outcome_key: 'hired' },
+        { key: 'rejected', terminal: true, outcome_key: 'rejected' }
+      ]
+    },
+    'onboarding' => {
+      stages: [
+        { key: 'new_customer' },
+        { key: 'setup' },
+        { key: 'training' },
+        { key: 'live', terminal: true, outcome_key: 'completed' }
+      ]
+    },
+    'collections' => {
+      stages: [
+        { key: 'new_account' },
+        { key: 'contacted' },
+        { key: 'payment_plan' },
+        { key: 'paid', terminal: true, outcome_key: 'paid' },
+        { key: 'escalated', terminal: true, outcome_key: 'escalated' }
+      ]
+    },
+    'real_estate' => {
+      stages: [
+        { key: 'new_inquiry' },
+        { key: 'qualified' },
+        { key: 'viewing' },
+        { key: 'offer' },
+        { key: 'closed', terminal: true, outcome_key: 'won' },
+        { key: 'lost', terminal: true, outcome_key: 'lost' }
+      ]
+    },
+    'custom' => { stages: [] }
   }.freeze
 
   class << self

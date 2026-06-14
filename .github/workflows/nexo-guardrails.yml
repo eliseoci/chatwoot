@@ -13,6 +13,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: nexo-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   distribution-guardrails:
     runs-on: ubuntu-latest
@@ -119,6 +126,8 @@ jobs:
 
       - name: Run Pipelines frontend specs
         run: |
-          pnpm run test -- \
+          pnpm exec vitest run \
+            --no-cache \
+            --no-coverage \
             app/javascript/dashboard/api/specs/pipelines.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js
