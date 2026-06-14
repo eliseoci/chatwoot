@@ -24,7 +24,7 @@ describe('#buildPipelinePayload', () => {
         name: 'Custom',
         description: '',
         templateKey: 'custom',
-        customStages: " New \n\n Qualified \n Won ",
+        customStages: ' New \n\n Qualified \n Won ',
       })
     ).toEqual({
       pipeline: {
