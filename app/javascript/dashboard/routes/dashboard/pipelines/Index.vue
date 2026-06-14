@@ -189,6 +189,15 @@ const timelineConversation = transition =>
   transition.conversation?.id ||
   t('PIPELINES_BOARD.TIMELINE.REMOVED_CONVERSATION');
 
+const automationSkipReason = transition => {
+  const reason = transition.automation?.skip_reason;
+  return reason
+    ? t(
+        `PIPELINES_BOARD.TIMELINE.AUTOMATION_SKIP_REASONS.${reason.toUpperCase()}`
+      )
+    : '';
+};
+
 const syncColumns = () => {
   columns.value = groupItemsByStage(
     activePipeline.value?.stages || [],
@@ -282,6 +291,10 @@ const loadBoard = async () => {
 
     restoreWorkspacePreference();
     await loadItems();
+    const requestedItem = items.value.find(
+      item => item.id === Number(route.query.itemId)
+    );
+    if (requestedItem) await openItemDetails(requestedItem);
   } catch (error) {
     loadState.value = pipelineLoadStateForError(error);
   } finally {
@@ -489,6 +502,11 @@ const closeItemDetails = () => {
   activeActivityAction.value = null;
   isSavingFieldValues.value = false;
   promptedRequiredFieldKeys.value = [];
+  if (route.query.itemId) {
+    const query = { ...route.query };
+    delete query.itemId;
+    router.replace({ query });
+  }
 };
 
 const saveFieldValues = async fieldValues => {
@@ -953,6 +971,11 @@ onBeforeUnmount(() => {
                   v-for="reason in item.workspace.attention_reasons.slice(0, 2)"
                   :key="reason"
                   class="rounded-md bg-n-ruby-3 px-1.5 py-0.5 text-xs text-n-ruby-11"
+                  :title="
+                    reason === 'manual_attention'
+                      ? item.workspace.attention_note
+                      : ''
+                  "
                 >
                   {{ attentionReasonLabel(reason) }}
                 </span>
@@ -1128,6 +1151,8 @@ onBeforeUnmount(() => {
                         {
                           title: transition.activity?.title,
                           actor: timelineActor(transition),
+                          rule: transition.automation?.rule_name,
+                          reason: automationSkipReason(transition),
                         }
                       )
                     }}

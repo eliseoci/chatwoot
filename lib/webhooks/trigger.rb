@@ -26,6 +26,7 @@ class Webhooks::Trigger
   def execute
     perform_request
   rescue StandardError => e
+    raise if @webhook_type == :pipeline_automation_webhook
     raise RetryableError.new(status: http_status(e), message: e.message) if retryable_agent_bot_error?(e)
 
     handle_failure(e)

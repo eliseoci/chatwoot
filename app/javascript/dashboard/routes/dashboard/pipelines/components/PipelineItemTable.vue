@@ -195,6 +195,11 @@ const openWithKeyboard = (item, event) => {
                 v-for="reason in item.workspace?.attention_reasons || []"
                 :key="reason"
                 class="rounded-md bg-n-amber-3 px-1.5 py-0.5 text-xs text-n-amber-11"
+                :title="
+                  reason === 'manual_attention'
+                    ? item.workspace.attention_note
+                    : ''
+                "
               >
                 {{ attentionLabel(reason) }}
               </span>

@@ -632,5 +632,51 @@ RSpec.describe 'Pipeline Items API', type: :request do
       )
       expect(response.parsed_body.first.dig('conversation', 'id')).to eq(conversation.display_id)
     end
+
+    it 'returns successful, skipped, and failed automation runs' do
+      item = create(:pipeline_item, account: account, pipeline: pipeline, stage: pipeline.stages.first, contact: contact)
+      transition = create(
+        :pipeline_item_stage_transition,
+        account: account,
+        pipeline_item: item,
+        from_stage: pipeline.stages.first,
+        to_stage: pipeline.stages.second,
+        actor: agent
+      )
+      rule = create(
+        :pipeline_automation_rule,
+        account: account,
+        pipeline: pipeline,
+        target_stage: pipeline.stages.second
+      )
+      %i[succeeded skipped failed].each do |status|
+        create(
+          :pipeline_automation_run,
+          account: account,
+          pipeline_item: item,
+          stage_transition: transition,
+          pipeline_automation_rule: create(
+            :pipeline_automation_rule,
+            account: account,
+            pipeline: pipeline,
+            target_stage: pipeline.stages.second
+          ),
+          status: status,
+          metadata: { rule_name: "#{rule.name} #{status}" }
+        )
+      end
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items/#{item.id}/timeline",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.pluck('event_type')).to include(
+        'automation_run_succeeded',
+        'automation_run_skipped',
+        'automation_run_failed'
+      )
+      expect(response.parsed_body.find { |entry| entry['automation'] }.dig('automation', 'rule_name')).to be_present
+    end
   end
 end

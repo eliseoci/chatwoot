@@ -57,4 +57,5 @@ json.workspace do
   json.labels workspace_context[:labels]
   json.inboxes workspace_context[:inboxes]
   json.attention_reasons workspace_context[:attention_reasons]
+  json.attention_note workspace_context[:attention_note]
 end

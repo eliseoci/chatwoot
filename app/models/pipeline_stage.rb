@@ -33,6 +33,11 @@ class PipelineStage < ApplicationRecord
            foreign_key: :to_stage_id,
            inverse_of: :to_stage,
            dependent: :restrict_with_error
+  has_many :automation_rules,
+           class_name: 'PipelineAutomationRule',
+           foreign_key: :target_stage_id,
+           inverse_of: :target_stage,
+           dependent: :restrict_with_error
 
   validates :name, presence: true
   validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 },

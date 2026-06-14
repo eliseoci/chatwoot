@@ -145,6 +145,7 @@ jobs:
             --no-cache \
             --no-coverage \
             app/javascript/dashboard/api/specs/pipelineIntakeRules.spec.js \
+            app/javascript/dashboard/api/specs/pipelineAutomationRules.spec.js \
             app/javascript/dashboard/api/specs/pipelineActivities.spec.js \
             app/javascript/dashboard/api/specs/pipelineFieldDefinitions.spec.js \
             app/javascript/dashboard/api/specs/pipelineItems.spec.js \
@@ -160,4 +161,5 @@ jobs:
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/customFields.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/workspace.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/intakeRuleForm.spec.js \
+            app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/automationRuleForm.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js

@@ -80,6 +80,31 @@ handoff, and failed automation.
 Owns trigger matching, condition evaluation, action execution, idempotency,
 Sidekiq orchestration, retries, approval gates, and run history.
 
+Rules contain ordered `PipelineAutomationAction` records rather than one
+opaque action payload. Every rule execution creates one
+`PipelineAutomationRun`, while every action creates one
+`PipelineAutomationActionRun`. Successful action runs are terminal and are not
+replayed when a later action fails. Failed actions can be retried without
+duplicating completed database work.
+
+Stage-entry execution uses Sidekiq through
+`Pipelines::Automations::StageEntryJob`. Execution errors use polynomial
+backoff with at most five job attempts. The final failed run remains visible in
+the item timeline and contributes `failed_automation` to the attention view.
+
+Outbound pipeline webhooks:
+
+- are configured only by account administrators;
+- use `SafeFetch` URL protections;
+- carry an account-scoped payload;
+- are signed with `X-Chatwoot-Timestamp` and `X-Chatwoot-Signature`;
+- use a stable `X-Chatwoot-Delivery` value derived from the action run so
+  receivers can deduplicate a successful delivery whose acknowledgement was
+  interrupted.
+
+Customer-facing message actions are intentionally absent. Adding one requires
+a separate approval capability rather than another action enum value.
+
 ### Pipeline Authorization
 
 Maps existing account users, teams, and role capabilities to pipeline actions.

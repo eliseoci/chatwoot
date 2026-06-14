@@ -333,6 +333,7 @@ Rails.application.routes.draw do
             delete :unlink_conversation, on: :member
           end
           resources :pipeline_intake_rules, only: [:index, :create, :update, :destroy]
+          resources :pipeline_automation_rules, only: [:index, :create, :update, :destroy]
 
           # Assignment V2 Routes
           resources :assignment_policies do

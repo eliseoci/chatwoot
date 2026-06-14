@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_007000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_009000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1241,6 +1241,80 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_007000) do
     t.index ["user_id"], name: "index_team_members_on_user_id"
   end
 
+  create_table "pipeline_automation_action_runs", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_automation_run_id", null: false
+    t.bigint "pipeline_automation_action_id", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "attempt_count", default: 0, null: false
+    t.jsonb "result", default: {}, null: false
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_automation_action_runs_on_account_id"
+    t.index ["pipeline_automation_action_id"], name: "index_pipeline_action_runs_on_action_id"
+    t.index ["pipeline_automation_run_id", "pipeline_automation_action_id"], name: "index_pipeline_action_runs_on_run_and_action", unique: true
+    t.index ["pipeline_automation_run_id"], name: "index_pipeline_action_runs_on_run_id"
+    t.check_constraint "attempt_count >= 0", name: "pipeline_automation_action_runs_attempt_count_non_negative"
+    t.check_constraint "status >= 0 AND status <= 2", name: "pipeline_automation_action_runs_status_range"
+  end
+
+  create_table "pipeline_automation_actions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_automation_rule_id", null: false
+    t.integer "position", default: 0, null: false
+    t.integer "action_type", null: false
+    t.jsonb "config", default: {}, null: false
+    t.string "secret"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_automation_actions_on_account_id"
+    t.index ["pipeline_automation_rule_id", "position"], name: "index_pipeline_automation_actions_on_rule_and_position", unique: true
+    t.index ["pipeline_automation_rule_id"], name: "index_pipeline_actions_on_rule_id"
+    t.check_constraint "action_type >= 0 AND action_type <= 8", name: "pipeline_automation_actions_type_range"
+    t.check_constraint "position >= 0", name: "pipeline_automation_actions_position_non_negative"
+  end
+
+  create_table "pipeline_automation_rules", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.bigint "target_stage_id", null: false
+    t.string "name", null: false
+    t.boolean "enabled", default: true, null: false
+    t.integer "trigger_type", default: 0, null: false
+    t.jsonb "conditions", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_automation_rules_on_account_id"
+    t.index ["pipeline_id", "target_stage_id"], name: "index_pipeline_automation_rules_on_pipeline_and_stage"
+    t.index ["pipeline_id"], name: "index_pipeline_automation_rules_on_pipeline_id"
+    t.index ["target_stage_id"], name: "index_pipeline_automation_rules_on_target_stage_id"
+    t.check_constraint "trigger_type = 0", name: "pipeline_automation_rules_trigger_type"
+  end
+
+  create_table "pipeline_automation_runs", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_automation_rule_id", null: false
+    t.bigint "pipeline_item_id", null: false
+    t.bigint "stage_transition_id", null: false
+    t.bigint "pipeline_activity_id"
+    t.integer "status", default: 0, null: false
+    t.integer "attempt_count", default: 0, null: false
+    t.string "skip_reason"
+    t.text "error_message"
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_automation_runs_on_account_id"
+    t.index ["pipeline_activity_id"], name: "index_pipeline_automation_runs_on_pipeline_activity_id"
+    t.index ["pipeline_automation_rule_id", "stage_transition_id"], name: "index_pipeline_automation_runs_on_rule_and_transition", unique: true
+    t.index ["pipeline_automation_rule_id"], name: "index_pipeline_automation_runs_on_pipeline_automation_rule_id"
+    t.index ["pipeline_item_id"], name: "index_pipeline_automation_runs_on_pipeline_item_id"
+    t.index ["stage_transition_id"], name: "index_pipeline_automation_runs_on_stage_transition_id"
+    t.check_constraint "attempt_count >= 0", name: "pipeline_automation_runs_attempt_count_non_negative"
+    t.check_constraint "status >= 0 AND status <= 4", name: "pipeline_automation_runs_status_range"
+  end
+
   create_table "pipeline_field_definitions", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "pipeline_id", null: false
@@ -1314,6 +1388,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_007000) do
     t.decimal "value", precision: 15, scale: 2
     t.date "due_date"
     t.jsonb "field_values", default: {}, null: false
+    t.boolean "attention_required", default: false, null: false
+    t.string "attention_note"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_pipeline_items_on_account_id"
@@ -1491,6 +1567,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_007000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "pipeline_automation_action_runs", "accounts"
+  add_foreign_key "pipeline_automation_action_runs", "pipeline_automation_actions"
+  add_foreign_key "pipeline_automation_action_runs", "pipeline_automation_runs"
+  add_foreign_key "pipeline_automation_actions", "accounts"
+  add_foreign_key "pipeline_automation_actions", "pipeline_automation_rules"
+  add_foreign_key "pipeline_automation_rules", "accounts"
+  add_foreign_key "pipeline_automation_rules", "pipeline_stages", column: "target_stage_id"
+  add_foreign_key "pipeline_automation_rules", "pipelines"
+  add_foreign_key "pipeline_automation_runs", "accounts"
+  add_foreign_key "pipeline_automation_runs", "pipeline_activities"
+  add_foreign_key "pipeline_automation_runs", "pipeline_automation_rules"
+  add_foreign_key "pipeline_automation_runs", "pipeline_item_stage_transitions", column: "stage_transition_id"
+  add_foreign_key "pipeline_automation_runs", "pipeline_items"
   add_foreign_key "pipeline_field_definitions", "accounts"
   add_foreign_key "pipeline_field_definitions", "pipelines"
   add_foreign_key "pipeline_activities", "accounts"

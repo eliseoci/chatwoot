@@ -65,7 +65,9 @@
         "UNREAD_CONVERSATION": "Unread",
         "HANDOFF": "Handoff",
         "MISSING_NEXT_ACTIVITY": "No next action",
-        "STALLED": "Stalled"
+        "STALLED": "Stalled",
+        "MANUAL_ATTENTION": "Marked for attention",
+        "FAILED_AUTOMATION": "Automation failed"
       }
     },
     "STATES": {
@@ -93,6 +95,14 @@
       "ACTIVITY_CANCELED": "{actor} canceled “{title}”.",
       "OWNERSHIP_CHANGED": "{actor} changed ownership from {from} to {to}.",
       "FIELD_VALUES_UPDATED": "{actor} updated pipeline fields.",
+      "AUTOMATION_RUN_SUCCEEDED": "Automation “{rule}” scheduled “{title}”.",
+      "AUTOMATION_RUN_SKIPPED": "Automation “{rule}” skipped this stage entry: {reason}.",
+      "AUTOMATION_RUN_FAILED": "Automation “{rule}” could not schedule its activity.",
+      "AUTOMATION_SKIP_REASONS": {
+        "DISABLED": "the rule is paused",
+        "TARGET_STAGE_MISMATCH": "the target stage did not match",
+        "CONDITIONS_NOT_MET": "its conditions were not met"
+      },
       "SYSTEM_ACTOR": "System",
       "REMOVED_CONVERSATION": "removed",
       "EMPTY": "No activity yet."

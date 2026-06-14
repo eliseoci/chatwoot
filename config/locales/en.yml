@@ -135,6 +135,31 @@ en:
     pipeline_intake_rule:
       account_mismatch: must belong to the same account as the intake rule
       stage_mismatch: must belong to the selected pipeline
+    pipeline_automation_rule:
+      account_mismatch: must belong to the same account as the automation rule
+      stage_mismatch: must belong to the selected pipeline
+      invalid_condition: contains an unsupported condition
+      invalid_field: must reference an active field in the selected pipeline
+      invalid_label: must reference an account label
+      invalid_activity_state: must use a supported activity state
+      actions_required: must include at least one action
+    pipeline_automation_action:
+      account_mismatch: must belong to the same account as the automation rule
+      invalid_field: must reference an active field in the selected pipeline
+      invalid_labels: must reference existing account labels
+      notification_message: must include an internal notification message
+      webhook_url: must include a valid HTTP or HTTPS URL
+      attention_state: must mark attention as required or cleared
+      activity_title: must include an activity title
+      activity_type: must include a supported activity type
+      due_mode: must use a relative or fixed due time
+      relative_due_time: must include a positive number of minutes
+      fixed_due_time: must include a valid date and time
+    pipeline_automation_action_run:
+      context_mismatch: must belong to the same account, rule, and automation run
+    pipeline_automation_run:
+      context_mismatch: must belong to the same account, pipeline item, and transition
+      activity_mismatch: must belong to the same pipeline item
     pipeline_item_stage_transition:
       mismatch: must belong to the same account and pipeline as the item
     pipeline_stage:
@@ -331,6 +356,7 @@ en:
       sla_missed_first_response: 'SLA target first response missed for conversation (#%{display_id})'
       sla_missed_next_response: 'SLA target next response missed for conversation (#%{display_id})'
       sla_missed_resolution: 'SLA target resolution missed for conversation (#%{display_id})'
+      pipeline_item_notification: 'Pipeline item "%{title}" needs your attention'
     attachment: 'Attachment'
     no_content: 'No content'
   conversations:

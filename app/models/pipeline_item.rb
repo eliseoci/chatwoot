@@ -2,20 +2,22 @@
 #
 # Table name: pipeline_items
 #
-#  id          :bigint           not null, primary key
-#  due_date    :date
-#  field_values :jsonb            not null
-#  priority    :integer
-#  title       :string
-#  value       :decimal(15, 2)
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#  account_id  :bigint           not null
-#  contact_id  :bigint           not null
-#  owner_id    :bigint
-#  pipeline_id :bigint           not null
-#  stage_id    :bigint           not null
-#  team_id     :bigint
+#  id                 :bigint           not null, primary key
+#  attention_note     :string
+#  attention_required :boolean          default(FALSE), not null
+#  due_date           :date
+#  field_values       :jsonb            not null
+#  priority           :integer
+#  title              :string
+#  value              :decimal(15, 2)
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#  account_id         :bigint           not null
+#  contact_id         :bigint           not null
+#  owner_id           :bigint
+#  pipeline_id        :bigint           not null
+#  stage_id           :bigint           not null
+#  team_id            :bigint
 #
 class PipelineItem < ApplicationRecord
   belongs_to :account
@@ -41,6 +43,11 @@ class PipelineItem < ApplicationRecord
            class_name: 'PipelineActivity',
            inverse_of: :pipeline_item,
            dependent: :destroy
+  has_many :automation_runs,
+           class_name: 'PipelineAutomationRun',
+           inverse_of: :pipeline_item,
+           dependent: :destroy
+  has_many :notifications, as: :primary_actor, dependent: :destroy_async
   has_many :scheduled_activities,
            -> { next_due },
            class_name: 'PipelineActivity',
@@ -50,6 +57,7 @@ class PipelineItem < ApplicationRecord
   enum :priority, { low: 0, medium: 1, high: 2, urgent: 3 }, prefix: true
 
   validates :title, length: { maximum: 255 }, allow_blank: true
+  validates :attention_note, length: { maximum: 255 }, allow_blank: true
   validates :value, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validate :associations_share_account
   validate :stage_belongs_to_pipeline
@@ -62,6 +70,17 @@ class PipelineItem < ApplicationRecord
 
   def next_activity
     scheduled_activities.first
+  end
+
+  def push_event_data
+    {
+      id: id,
+      title: display_title,
+      pipeline_id: pipeline_id,
+      meta: {
+        assignee: owner&.push_event_data
+      }
+    }
   end
 
   private

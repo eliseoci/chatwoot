@@ -73,4 +73,25 @@ RSpec.describe Pipelines::Items::WorkspaceContextService do
 
     expect(context[:attention_reasons]).to include('missing_next_activity')
   end
+
+  it 'flags explicit attention and failed automation runs' do
+    item.update!(
+      attention_required: true,
+      attention_note: 'Manager review requested'
+    )
+    create(
+      :pipeline_automation_run,
+      account: account,
+      pipeline_item: item,
+      status: :failed
+    )
+
+    context = described_class.new([item], at: at).perform.fetch(item.id)
+
+    expect(context[:attention_reasons]).to include(
+      'manual_attention',
+      'failed_automation'
+    )
+    expect(context[:attention_note]).to eq('Manager review requested')
+  end
 end

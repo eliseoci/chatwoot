@@ -97,6 +97,10 @@ class Account < ApplicationRecord
   has_many :pipeline_item_events, dependent: :destroy_async
   has_many :pipeline_activities, dependent: :destroy_async
   has_many :pipeline_intake_rules, dependent: :destroy_async
+  has_many :pipeline_automation_rules, dependent: :destroy_async
+  has_many :pipeline_automation_runs, dependent: :destroy_async
+  has_many :pipeline_automation_actions, dependent: :destroy_async
+  has_many :pipeline_automation_action_runs, dependent: :destroy_async
   has_many :sms_channels, dependent: :destroy_async, class_name: '::Channel::Sms'
   has_many :teams, dependent: :destroy_async
   has_many :telegram_channels, dependent: :destroy_async, class_name: '::Channel::Telegram'

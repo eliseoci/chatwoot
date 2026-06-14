@@ -29,6 +29,10 @@ class Pipeline < ApplicationRecord
            class_name: 'PipelineIntakeRule',
            inverse_of: :pipeline,
            dependent: :destroy
+  has_many :automation_rules,
+           class_name: 'PipelineAutomationRule',
+           inverse_of: :pipeline,
+           dependent: :destroy
 
   validates :name, presence: true, uniqueness: { scope: :account_id }
   validates :template_key, presence: true, inclusion: { in: TEMPLATE_KEYS }

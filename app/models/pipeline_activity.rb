@@ -29,6 +29,10 @@ class PipelineActivity < ApplicationRecord
            class_name: 'PipelineItemEvent',
            inverse_of: :pipeline_activity,
            dependent: :nullify
+  has_one :automation_run,
+          class_name: 'PipelineAutomationRun',
+          inverse_of: :pipeline_activity,
+          dependent: :nullify
 
   enum :activity_type, { task: 0, call: 1, message: 2, meeting: 3, custom: 4 }, prefix: true
   enum :status, { scheduled: 0, completed: 1, canceled: 2 }, prefix: true

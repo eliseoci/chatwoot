@@ -7,6 +7,7 @@ class Pipelines::Items::TransitionStageService
   end
 
   def perform
+    transition = nil
     PipelineItem.transaction do
       pipeline_item.lock!
       target_stage = pipeline_item.pipeline.stages.find(target_stage_id)
@@ -15,9 +16,10 @@ class Pipelines::Items::TransitionStageService
 
       validate_required_fields!(target_stage)
       pipeline_item.update!(stage: target_stage)
-      record_transition(previous_stage, target_stage)
-      pipeline_item
+      transition = record_transition(previous_stage, target_stage)
     end
+    Pipelines::Automations::StageEntryJob.perform_later(transition.id) if transition.present?
+    pipeline_item
   end
 
   private

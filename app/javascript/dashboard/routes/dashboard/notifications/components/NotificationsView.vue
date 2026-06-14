@@ -27,7 +27,7 @@ export default {
       window.history.pushState({}, null, `${this.$route.path}?page=${page}`);
       this.$store.dispatch('notifications/get', { page });
     },
-    openConversation(notification) {
+    openNotification(notification) {
       const {
         primary_actor_id: primaryActorId,
         primary_actor_type: primaryActorType,
@@ -44,6 +44,18 @@ export default {
         primaryActorType,
         unreadCount: this.meta.unreadCount,
       });
+
+      if (primaryActorType === 'PipelineItem') {
+        this.$router.push({
+          name: 'pipelines_board',
+          params: {
+            accountId: this.accountId,
+            pipelineId: notification.primary_actor.pipeline_id,
+          },
+          query: { itemId: conversationId },
+        });
+        return;
+      }
 
       this.$router.push(
         `/app/accounts/${this.accountId}/conversations/${conversationId}`
@@ -64,7 +76,7 @@ export default {
         :notifications="records"
         :is-loading="uiFlags.isFetching"
         :is-updating="uiFlags.isUpdating"
-        :on-click-notification="openConversation"
+        :on-click-notification="openNotification"
         :on-mark-all-done-click="onMarkAllDoneClick"
       />
       <TableFooter

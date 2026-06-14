@@ -757,6 +757,87 @@
         "OTHER": "Other channel"
       }
     },
+    "AUTOMATIONS": {
+      "TITLE": "Stage automations",
+      "DESCRIPTION": "Run auditable internal workflow actions when an item enters a stage. Customer messages stay disabled.",
+      "LOADING": "Loading stage automations",
+      "ACTIONS": {
+        "CREATE_ACTIVITY": "Create a follow-up activity",
+        "ASSIGN_OWNER": "Assign an owner",
+        "ASSIGN_TEAM": "Assign a team",
+        "UPDATE_FIELD": "Update a pipeline field",
+        "ADD_LABELS": "Add a Chatwoot label",
+        "REMOVE_LABELS": "Remove a Chatwoot label",
+        "SEND_INTERNAL_NOTIFICATION": "Notify an operator",
+        "SEND_WEBHOOK": "Send a signed webhook",
+        "UPDATE_ATTENTION": "Update attention state"
+      },
+      "FORM": {
+        "NAME": "Automation name",
+        "NAME_PLACEHOLDER": "For example, Follow up with qualified leads",
+        "PIPELINE": "Pipeline",
+        "TARGET_STAGE": "When an item enters",
+        "PRIORITY": "Only when priority is",
+        "ANY_PRIORITY": "Any priority",
+        "ACTION_TYPE": "Then",
+        "ACTIVITY_TITLE": "Activity to create",
+        "ACTIVITY_TITLE_PLACEHOLDER": "Call the customer",
+        "ACTIVITY_TYPE": "Activity type",
+        "ASSIGNEE": "Assign to",
+        "DUE_MODE": "Set the due time",
+        "RELATIVE": "After the item enters the stage",
+        "FIXED": "At a fixed date and time",
+        "DUE_IN_MINUTES": "Minutes after stage entry",
+        "DUE_AT": "Due date and time",
+        "NOTES": "Internal notes",
+        "NOTES_PLACEHOLDER": "Optional context for the assigned person",
+        "OWNER": "Owner",
+        "TEAM": "Team",
+        "CLEAR_ASSIGNMENT": "Clear the current assignment",
+        "FIELD": "Pipeline field",
+        "FIELD_VALUE": "New value",
+        "LABEL": "Chatwoot label",
+        "RECIPIENT": "Notify",
+        "NOTIFICATION_MESSAGE": "Internal notification",
+        "WEBHOOK_URL": "Webhook URL",
+        "WEBHOOK_SECRET": "Signing secret",
+        "ATTENTION_STATE": "Attention state",
+        "ATTENTION_REQUIRED": "Needs attention",
+        "ATTENTION_CLEARED": "Clear attention",
+        "ATTENTION_NOTE": "Attention note",
+        "SUBMIT": "Create automation"
+      },
+      "LIST": {
+        "EMPTY": "No stage automations yet.",
+        "SUMMARY": "{pipeline} · {stage} → {action}",
+        "ACTIVITY_SUMMARY": "{activity} · {due}",
+        "RELATIVE_DUE": "{minutes} minutes after entry",
+        "FIXED_DUE": "due {date}",
+        "ACTIVE": "Active",
+        "PAUSED": "Paused",
+        "PAUSE": "Pause",
+        "RESUME": "Resume",
+        "DELETE": "Delete"
+      },
+      "RUNS": {
+        "SUMMARY": "{status} · {attempts} attempts",
+        "STATUS": {
+          "PENDING": "Pending",
+          "PROCESSING": "Running",
+          "SUCCEEDED": "Succeeded",
+          "SKIPPED": "Skipped",
+          "FAILED": "Failed"
+        }
+      },
+      "API": {
+        "LOAD_ERROR": "Stage automations could not be loaded.",
+        "CREATE_SUCCESS": "Stage automation created.",
+        "CREATE_ERROR": "The stage automation could not be created.",
+        "UPDATE_ERROR": "The stage automation could not be updated.",
+        "DELETE_SUCCESS": "Stage automation deleted.",
+        "DELETE_ERROR": "The stage automation could not be deleted."
+      }
+    },
     "API": {
       "LOAD_ERROR": "Pipelines could not be loaded.",
       "CREATE_SUCCESS": "Pipeline created.",

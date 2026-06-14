@@ -2,15 +2,19 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
+import AgentsAPI from 'dashboard/api/agents';
 import InboxesAPI from 'dashboard/api/inboxes';
+import LabelsAPI from 'dashboard/api/labels';
 import PipelineIntakeRulesAPI from 'dashboard/api/pipelineIntakeRules';
 import PipelinesAPI from 'dashboard/api/pipelines';
+import TeamsAPI from 'dashboard/api/teams';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import PipelineAutomationSettings from './components/PipelineAutomationSettings.vue';
 import PipelineFieldSettings from './components/PipelineFieldSettings.vue';
 import { buildIntakeRulePayload } from './helpers/intakeRuleForm';
 import { buildPipelinePayload } from './helpers/pipelineForm';
@@ -20,6 +24,9 @@ const pipelines = ref([]);
 const templates = ref([]);
 const intakeRules = ref([]);
 const inboxes = ref([]);
+const agents = ref([]);
+const teams = ref([]);
+const labels = ref([]);
 const isLoading = ref(true);
 const isCreating = ref(false);
 const isSavingRule = ref(false);
@@ -111,16 +118,25 @@ const loadPipelines = async () => {
       templatesResponse,
       rulesResponse,
       inboxesResponse,
+      agentsResponse,
+      teamsResponse,
+      labelsResponse,
     ] = await Promise.all([
       PipelinesAPI.get(),
       PipelinesAPI.getTemplates(),
       PipelineIntakeRulesAPI.get(),
       InboxesAPI.get(),
+      AgentsAPI.get(),
+      TeamsAPI.get(),
+      LabelsAPI.get(),
     ]);
     pipelines.value = pipelinesResponse.data;
     templates.value = templatesResponse.data;
     intakeRules.value = rulesResponse.data;
     inboxes.value = inboxesResponse.data.payload;
+    agents.value = agentsResponse.data;
+    teams.value = teamsResponse.data;
+    labels.value = labelsResponse.data.payload;
     ruleForm.pipelineId = pipelines.value[0]?.id || '';
   } catch (error) {
     useAlert(t('PIPELINES_SETTINGS.API.LOAD_ERROR'));
@@ -539,6 +555,13 @@ onMounted(loadPipelines);
               />
             </div>
           </article>
+
+          <PipelineAutomationSettings
+            :pipelines="pipelines"
+            :agents="agents"
+            :teams="teams"
+            :labels="labels"
+          />
         </section>
       </div>
     </template>

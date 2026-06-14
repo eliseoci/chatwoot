@@ -20,6 +20,11 @@ class PipelineItemStageTransition < ApplicationRecord
   belongs_to :from_stage, class_name: 'PipelineStage', inverse_of: :outgoing_item_transitions
   belongs_to :to_stage, class_name: 'PipelineStage', inverse_of: :incoming_item_transitions
   belongs_to :actor, class_name: 'User', inverse_of: :pipeline_item_stage_transitions
+  has_many :automation_runs,
+           class_name: 'PipelineAutomationRun',
+           foreign_key: :stage_transition_id,
+           inverse_of: :stage_transition,
+           dependent: :destroy
 
   validates :source, presence: true, inclusion: { in: SOURCES }
   validate :associations_match_pipeline_item

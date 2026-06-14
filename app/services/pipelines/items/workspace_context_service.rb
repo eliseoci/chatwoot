@@ -36,7 +36,8 @@ class Pipelines::Items::WorkspaceContextService
       channels: channels_for(conversations),
       labels: labels_for(conversations),
       inboxes: inboxes_for(conversations),
-      attention_reasons: attention_reasons
+      attention_reasons: attention_reasons,
+      attention_note: pipeline_item.attention_note
     }
   end
 
@@ -46,7 +47,9 @@ class Pipelines::Items::WorkspaceContextService
       ['unread_conversation', unread_count.positive?],
       ['handoff', conversations.any? { |conversation| handoff?(conversation) }],
       ['missing_next_activity', pipeline_item.next_activity.blank?],
-      ['stalled', stalled?(last_activity_at)]
+      ['stalled', stalled?(last_activity_at)],
+      ['manual_attention', pipeline_item.attention_required?],
+      ['failed_automation', pipeline_item.automation_runs.any?(&:status_failed?)]
     ].filter_map { |reason, active| reason if active }
   end
 

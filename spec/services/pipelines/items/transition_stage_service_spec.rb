@@ -26,8 +26,10 @@ RSpec.describe Pipelines::Items::TransitionStageService do
   it 'moves the item and records an append-only transition' do
     target_stage = pipeline.stages.second
 
-    expect { transition(target_stage.id, source: 'board_drag') }
-      .to change(PipelineItemStageTransition, :count).by(1)
+    expect do
+      transition(target_stage.id, source: 'board_drag')
+    end.to change(PipelineItemStageTransition, :count).by(1)
+       .and have_enqueued_job(Pipelines::Automations::StageEntryJob)
 
     history = item.stage_transitions.last
     expect(item.reload.stage).to eq(target_stage)
