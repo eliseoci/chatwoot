@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_001000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1258,6 +1258,30 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
     t.check_constraint "position >= 0", name: "pipeline_stages_position_non_negative"
   end
 
+  create_table "pipeline_items", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.bigint "stage_id", null: false
+    t.bigint "contact_id", null: false
+    t.bigint "owner_id"
+    t.bigint "team_id"
+    t.string "title"
+    t.integer "priority"
+    t.decimal "value", precision: 15, scale: 2
+    t.date "due_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_items_on_account_id"
+    t.index ["contact_id"], name: "index_pipeline_items_on_contact_id"
+    t.index ["owner_id"], name: "index_pipeline_items_on_owner_id"
+    t.index ["pipeline_id", "stage_id"], name: "index_pipeline_items_on_pipeline_id_and_stage_id"
+    t.index ["pipeline_id"], name: "index_pipeline_items_on_pipeline_id"
+    t.index ["stage_id"], name: "index_pipeline_items_on_stage_id"
+    t.index ["team_id"], name: "index_pipeline_items_on_team_id"
+    t.check_constraint "priority IS NULL OR priority >= 0 AND priority <= 3", name: "pipeline_items_priority_range"
+    t.check_constraint "value IS NULL OR value >= 0::numeric", name: "pipeline_items_value_non_negative"
+  end
+
   create_table "pipelines", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.string "name", null: false
@@ -1352,6 +1376,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_000000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "pipeline_items", "accounts"
+  add_foreign_key "pipeline_items", "contacts", on_delete: :cascade
+  add_foreign_key "pipeline_items", "pipeline_stages", column: "stage_id"
+  add_foreign_key "pipeline_items", "pipelines"
+  add_foreign_key "pipeline_items", "teams", on_delete: :nullify
+  add_foreign_key "pipeline_items", "users", column: "owner_id", on_delete: :nullify
   add_foreign_key "pipeline_stages", "accounts"
   add_foreign_key "pipeline_stages", "pipelines"
   add_foreign_key "pipelines", "accounts"

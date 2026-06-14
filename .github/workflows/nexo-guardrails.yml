@@ -79,24 +79,23 @@ jobs:
       - name: Lint Pipelines backend
         run: |
           bundle exec rubocop \
-            app/controllers/api/v1/accounts/pipelines_controller.rb \
-            app/models/pipeline.rb \
-            app/models/pipeline_stage.rb \
-            app/policies/pipeline_policy.rb \
+            app/controllers/api/v1/accounts/pipeline*_controller.rb \
+            app/models/pipeline*.rb \
+            app/policies/pipeline*_policy.rb \
             app/services/pipelines \
-            db/migrate/20260614000000_create_pipelines.rb \
-            spec/factories/pipelines.rb \
-            spec/models/pipeline_spec.rb \
-            spec/models/pipeline_stage_spec.rb \
-            spec/requests/api/v1/accounts/pipelines_spec.rb \
+            db/migrate/*pipeline*.rb \
+            spec/factories/pipeline*.rb \
+            spec/models/pipeline*_spec.rb \
+            spec/policies/pipeline*_policy_spec.rb \
+            spec/requests/api/v1/accounts/pipeline*_spec.rb \
             spec/services/pipelines
 
       - name: Run Pipelines backend specs
         run: |
           bundle exec rspec \
-            spec/models/pipeline_spec.rb \
-            spec/models/pipeline_stage_spec.rb \
-            spec/requests/api/v1/accounts/pipelines_spec.rb \
+            spec/models/pipeline*_spec.rb \
+            spec/policies/pipeline*_policy_spec.rb \
+            spec/requests/api/v1/accounts/pipeline*_spec.rb \
             spec/services/pipelines
 
   pipelines-frontend:
@@ -120,8 +119,9 @@ jobs:
       - name: Lint Pipelines frontend
         run: |
           pnpm exec eslint \
-            app/javascript/dashboard/api/pipelines.js \
-            app/javascript/dashboard/api/specs/pipelines.spec.js \
+            app/javascript/dashboard/api/pipeline*.js \
+            app/javascript/dashboard/api/specs/pipeline*.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines \
             app/javascript/dashboard/routes/dashboard/settings/pipelines
 
       - name: Run Pipelines frontend specs
@@ -129,5 +129,7 @@ jobs:
           pnpm exec vitest run \
             --no-cache \
             --no-coverage \
+            app/javascript/dashboard/api/specs/pipelineItems.spec.js \
             app/javascript/dashboard/api/specs/pipelines.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/helpers/board.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js

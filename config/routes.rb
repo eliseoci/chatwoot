@@ -307,6 +307,7 @@ Rails.application.routes.draw do
           resources :pipelines, only: [:index, :show, :create] do
             get :templates, on: :collection
           end
+          resources :pipeline_items, only: [:index, :show, :create]
 
           # Assignment V2 Routes
           resources :assignment_policies do

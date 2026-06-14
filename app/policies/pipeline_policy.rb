@@ -1,10 +1,10 @@
 class PipelinePolicy < ApplicationPolicy
   def index?
-    account_user.administrator?
+    true
   end
 
   def show?
-    account_user.administrator?
+    true
   end
 
   def create?

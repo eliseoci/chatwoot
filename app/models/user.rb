@@ -108,6 +108,11 @@ class User < ApplicationRecord
   has_many :notification_settings, dependent: :destroy_async
   has_many :notification_subscriptions, dependent: :destroy_async
   has_many :notifications, dependent: :destroy_async
+  has_many :owned_pipeline_items,
+           class_name: 'PipelineItem',
+           foreign_key: :owner_id,
+           inverse_of: :owner,
+           dependent: :nullify
   has_many :team_members, dependent: :destroy_async
   has_many :teams, through: :team_members
   has_many :articles, foreign_key: 'author_id', dependent: :nullify, inverse_of: :author

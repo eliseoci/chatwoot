@@ -516,6 +516,12 @@ const menuItems = computed(() => {
       ],
     },
     {
+      name: 'Pipelines',
+      label: t('SIDEBAR.PIPELINES'),
+      icon: 'i-lucide-columns-3',
+      to: accountScopedRoute('pipelines_board'),
+    },
+    {
       name: 'Companies',
       label: t('SIDEBAR.COMPANIES'),
       icon: 'i-lucide-building-2',

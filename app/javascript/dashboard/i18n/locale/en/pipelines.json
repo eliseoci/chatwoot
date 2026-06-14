@@ -1,0 +1,45 @@
+{
+  "PIPELINES_BOARD": {
+    "HEADER": "Pipelines",
+    "DESCRIPTION": "Track business progress without changing conversation status.",
+    "PIPELINE_SELECTOR": "Select pipeline",
+    "ADD_ITEM": "Add item",
+    "LOADING": "Loading pipeline",
+    "EMPTY_STAGE": "No items in this stage",
+    "EMPTY_PIPELINES": {
+      "TITLE": "Create your first pipeline",
+      "DESCRIPTION": "Choose a workflow template before adding pipeline items.",
+      "ACTION": "Create pipeline"
+    },
+    "PRIORITY": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    },
+    "FORM": {
+      "TITLE": "Add pipeline item",
+      "DESCRIPTION": "Choose the customer and workflow context for this item.",
+      "TITLE_LABEL": "Item title",
+      "TITLE_PLACEHOLDER": "Optional business objective",
+      "CONTACT_LABEL": "Contact",
+      "CONTACT_PLACEHOLDER": "Select contact",
+      "STAGE_LABEL": "Stage",
+      "OWNER_LABEL": "Owner",
+      "UNASSIGNED": "Unassigned",
+      "TEAM_LABEL": "Team",
+      "NO_TEAM": "No team",
+      "PRIORITY_LABEL": "Priority",
+      "PRIORITY_NONE": "No priority",
+      "VALUE_LABEL": "Value",
+      "VALUE_PLACEHOLDER": "Optional amount",
+      "DUE_DATE_LABEL": "Due date",
+      "SUBMIT": "Add item"
+    },
+    "API": {
+      "LOAD_ERROR": "The pipeline board could not be loaded.",
+      "CREATE_SUCCESS": "Pipeline item added.",
+      "CREATE_ERROR": "The pipeline item could not be added."
+    }
+  }
+}

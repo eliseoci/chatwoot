@@ -62,11 +62,11 @@ RSpec.describe 'Pipelines API', type: :request do
   describe 'GET /api/v1/accounts/:account_id/pipelines' do
     let!(:pipeline) { create(:pipeline, :with_stages, account: account, name: 'Onboarding') }
 
-    it 'returns account-scoped pipelines and ordered stages to administrators' do
+    it 'returns account-scoped pipelines and ordered stages to operators' do
       create(:pipeline, account: create(:account), name: 'Other account')
 
       get "/api/v1/accounts/#{account.id}/pipelines",
-          headers: administrator.create_new_auth_token,
+          headers: agent.create_new_auth_token,
           as: :json
 
       expect(response).to have_http_status(:success)
