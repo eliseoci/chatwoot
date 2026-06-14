@@ -6,11 +6,31 @@ class PipelineItemsAPI extends ApiClient {
     super('pipeline_items', { accountScoped: true });
   }
 
-  get({ pipelineId, contactId, conversationId } = {}) {
+  get({
+    pipelineId,
+    contactId,
+    conversationId,
+    q,
+    stageId,
+    ownerId,
+    teamId,
+    inboxId,
+    channel,
+    label,
+    dueState,
+  } = {}) {
     const params = {};
     if (pipelineId) params.pipeline_id = pipelineId;
     if (contactId) params.contact_id = contactId;
     if (conversationId) params.conversation_id = conversationId;
+    if (q) params.q = q;
+    if (stageId) params.stage_id = stageId;
+    if (ownerId) params.owner_id = ownerId;
+    if (teamId) params.team_id = teamId;
+    if (inboxId) params.inbox_id = inboxId;
+    if (channel) params.channel = channel;
+    if (label) params.label = label;
+    if (dueState) params.due_state = dueState;
     return axios.get(this.url, { params });
   }
 

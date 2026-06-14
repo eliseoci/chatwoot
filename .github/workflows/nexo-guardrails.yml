@@ -86,13 +86,15 @@ jobs:
             app/jobs/pipelines \
             app/listeners/pipelines \
             db/migrate/*pipeline*.rb \
+            lib/events/types.rb \
             spec/factories/pipeline*.rb \
             spec/models/pipeline*_spec.rb \
             spec/policies/pipeline*_policy_spec.rb \
             spec/requests/api/v1/accounts/pipeline*_spec.rb \
             spec/services/pipelines \
             spec/jobs/pipelines \
-            spec/listeners/pipelines
+            spec/listeners/pipelines \
+            spec/listeners/action_cable_listener_spec.rb
 
       - name: Run Pipelines backend specs
         run: |
@@ -102,7 +104,8 @@ jobs:
             spec/requests/api/v1/accounts/pipeline*_spec.rb \
             spec/services/pipelines \
             spec/jobs/pipelines \
-            spec/listeners/pipelines
+            spec/listeners/pipelines \
+            spec/listeners/action_cable_listener_spec.rb
 
   pipelines-frontend:
     runs-on: ubuntu-latest
@@ -129,9 +132,12 @@ jobs:
             app/javascript/dashboard/api/specs/pipeline*.spec.js \
             app/javascript/dashboard/components/widgets/conversation/pipelines \
             app/javascript/dashboard/composables/useUISettings.js \
+            app/javascript/dashboard/helper/actionCable.js \
+            app/javascript/dashboard/helper/specs/actionCable.spec.js \
             app/javascript/dashboard/routes/dashboard/conversation/ContactPanel.vue \
             app/javascript/dashboard/routes/dashboard/pipelines \
-            app/javascript/dashboard/routes/dashboard/settings/pipelines
+            app/javascript/dashboard/routes/dashboard/settings/pipelines \
+            app/javascript/shared/constants/busEvents.js
 
       - name: Run Pipelines frontend specs
         run: |
@@ -143,7 +149,11 @@ jobs:
             app/javascript/dashboard/api/specs/pipelineItems.spec.js \
             app/javascript/dashboard/api/specs/pipelines.spec.js \
             app/javascript/dashboard/components/widgets/conversation/pipelines/specs/PipelineItemsList.spec.js \
+            app/javascript/dashboard/helper/specs/actionCable.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineItemTable.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineWorkspaceToolbar.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/activities.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/board.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/helpers/workspace.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/intakeRuleForm.spec.js \
             app/javascript/dashboard/routes/dashboard/settings/pipelines/helpers/pipelineForm.spec.js

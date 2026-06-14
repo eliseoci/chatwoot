@@ -23,8 +23,16 @@ class PipelineItemConversation < ApplicationRecord
   validates :source, presence: true, inclusion: { in: SOURCES }
   validate :associations_share_account
   validate :conversation_matches_contact
+  after_commit :broadcast_pipeline_item_update, on: [:create, :destroy]
 
   private
+
+  def broadcast_pipeline_item_update
+    Pipelines::Items::RealtimeBroadcastService.call(
+      pipeline_item,
+      event_name: PIPELINE_ITEM_UPDATED
+    )
+  end
 
   def associations_share_account
     return if account_id.blank?

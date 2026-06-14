@@ -1,5 +1,7 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 import ActionCableConnector from '../actionCable';
+import { BUS_EVENTS } from 'shared/constants/busEvents';
+import { emitter } from 'shared/helpers/mitt';
 
 vi.mock('shared/helpers/mitt', () => ({
   emitter: {
@@ -11,6 +13,12 @@ vi.mock('dashboard/composables/useImpersonation', () => ({
   useImpersonation: () => ({
     isImpersonating: { value: false },
   }),
+}));
+
+vi.mock('../AudioAlerts/DashboardAudioNotificationHelper', () => ({
+  default: {
+    onNewMessage: vi.fn(),
+  },
 }));
 
 global.chatwootConfig = {
@@ -158,6 +166,42 @@ describe('ActionCableConnector - Copilot Tests', () => {
 
       vi.advanceTimersByTime(4000);
       expect(mockDispatch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('pipeline workspace event handlers', () => {
+    it('emits pipeline item changes received through Action Cable', () => {
+      const data = {
+        account_id: 1,
+        pipeline_id: 3,
+        pipeline_item_id: 8,
+      };
+
+      actionCable.onReceived({
+        event: 'pipeline.item_updated',
+        data,
+      });
+
+      expect(emitter.emit).toHaveBeenCalledWith(
+        BUS_EVENTS.PIPELINE_ITEM_CHANGED,
+        data
+      );
+    });
+
+    it('emits linked conversation changes after a message arrives', () => {
+      actionCable.onReceived({
+        event: 'message.created',
+        data: {
+          account_id: 1,
+          conversation_id: 42,
+          conversation: { last_activity_at: 100 },
+        },
+      });
+
+      expect(emitter.emit).toHaveBeenCalledWith(
+        BUS_EVENTS.PIPELINE_CONVERSATION_CHANGED,
+        { id: 42 }
+      );
     });
   });
 });

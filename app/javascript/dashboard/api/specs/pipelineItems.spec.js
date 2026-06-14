@@ -38,6 +38,39 @@ describe('#PipelineItemsAPI', () => {
     window.axios = originalAxios;
   });
 
+  it('serializes workspace search and filters', () => {
+    const originalAxios = window.axios;
+    const axiosMock = { get: vi.fn(() => Promise.resolve()) };
+    window.axios = axiosMock;
+
+    pipelineItemsAPI.get({
+      pipelineId: 1,
+      q: 'renewal',
+      stageId: 2,
+      ownerId: 'unassigned',
+      teamId: 3,
+      inboxId: 4,
+      channel: 'Channel::Whatsapp',
+      label: 'vip',
+      dueState: 'overdue',
+    });
+
+    expect(axiosMock.get).toHaveBeenCalledWith(pipelineItemsAPI.url, {
+      params: {
+        pipeline_id: 1,
+        q: 'renewal',
+        stage_id: 2,
+        owner_id: 'unassigned',
+        team_id: 3,
+        inbox_id: 4,
+        channel: 'Channel::Whatsapp',
+        label: 'vip',
+        due_state: 'overdue',
+      },
+    });
+    window.axios = originalAxios;
+  });
+
   it('updates item ownership', () => {
     const originalAxios = window.axios;
     const axiosMock = { patch: vi.fn(() => Promise.resolve()) };

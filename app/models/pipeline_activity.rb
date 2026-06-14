@@ -37,6 +37,7 @@ class PipelineActivity < ApplicationRecord
   validates :due_at, presence: true
   validate :associations_share_account
   validate :terminal_timestamps_match_status
+  after_commit :broadcast_pipeline_item_update, on: [:create, :update, :destroy]
 
   scope :next_due, -> { where(status: :scheduled).order(:due_at, :id) }
   scope :operational_order, lambda {
@@ -48,6 +49,13 @@ class PipelineActivity < ApplicationRecord
   end
 
   private
+
+  def broadcast_pipeline_item_update
+    Pipelines::Items::RealtimeBroadcastService.call(
+      pipeline_item,
+      event_name: PIPELINE_ITEM_UPDATED
+    )
+  end
 
   def associations_share_account
     return if account_id.blank?

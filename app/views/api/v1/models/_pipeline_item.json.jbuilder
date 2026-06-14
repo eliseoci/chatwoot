@@ -45,3 +45,15 @@ if next_activity.present?
 else
   json.next_activity nil
 end
+
+workspace_context = local_assigns[:workspace_context] ||
+                    Pipelines::Items::WorkspaceContextService.new([resource]).perform.fetch(resource.id)
+json.workspace do
+  json.last_activity_at workspace_context[:last_activity_at]
+  json.unread_count workspace_context[:unread_count]
+  json.conversation_ids workspace_context[:conversation_ids]
+  json.channels workspace_context[:channels]
+  json.labels workspace_context[:labels]
+  json.inboxes workspace_context[:inboxes]
+  json.attention_reasons workspace_context[:attention_reasons]
+end

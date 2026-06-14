@@ -54,6 +54,31 @@ describe ActionCableListener do
     end
   end
 
+  describe '#pipeline_item_updated' do
+    let(:pipeline_item) { create(:pipeline_item, account: account) }
+    let(:event) do
+      Events::Base.new(
+        :'pipeline.item_updated',
+        Time.zone.now,
+        pipeline_item: pipeline_item
+      )
+    end
+
+    it 'broadcasts the changed item to account operators' do
+      expect(ActionCableBroadcastJob).to receive(:perform_later).with(
+        a_collection_containing_exactly(agent.pubsub_token, admin.pubsub_token),
+        'pipeline.item_updated',
+        {
+          account_id: account.id,
+          pipeline_id: pipeline_item.pipeline_id,
+          pipeline_item_id: pipeline_item.id
+        }
+      )
+
+      listener.pipeline_item_updated(event)
+    end
+  end
+
   describe '#typing_on' do
     let(:event_name) { :'conversation.typing_on' }
     let!(:event) { Events::Base.new(event_name, Time.zone.now, conversation: conversation, user: agent, is_private: false) }

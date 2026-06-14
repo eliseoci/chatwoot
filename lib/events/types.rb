@@ -46,6 +46,10 @@ module Events::Types
   CONTACT_MERGED = 'contact.merged'
   CONTACT_DELETED = 'contact.deleted'
 
+  # pipeline events
+  PIPELINE_ITEM_CREATED = 'pipeline.item_created'
+  PIPELINE_ITEM_UPDATED = 'pipeline.item_updated'
+
   # contact events
   INBOX_CREATED = 'inbox.created'
   INBOX_UPDATED = 'inbox.updated'

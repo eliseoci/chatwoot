@@ -33,6 +33,7 @@ class ActionCableConnector extends BaseActionCableConnector {
       'user:logout': this.onLogout,
       'page:reload': this.onReload,
       'assignee.changed': this.onAssigneeChanged,
+      'team.changed': this.onTeamChanged,
       'conversation.typing_on': this.onTypingOn,
       'conversation.typing_off': this.onTypingOff,
       'conversation.contact_changed': this.onConversationContactChange,
@@ -45,6 +46,8 @@ class ActionCableConnector extends BaseActionCableConnector {
       'notification.updated': this.onNotificationUpdated,
       'conversation.read': this.onConversationRead,
       'conversation.updated': this.onConversationUpdated,
+      'pipeline.item_created': this.onPipelineItemChanged,
+      'pipeline.item_updated': this.onPipelineItemChanged,
       'conversation.unread_count_changed':
         this.onConversationUnreadCountChanged,
       'account.cache_invalidated': this.onCacheInvalidate,
@@ -99,6 +102,16 @@ class ActionCableConnector extends BaseActionCableConnector {
       this.app.$store.dispatch('updateConversation', payload);
     }
     this.fetchConversationStats();
+    this.emitPipelineConversationChanged(payload);
+  };
+
+  onTeamChanged = payload => {
+    const { id } = payload;
+    if (id) {
+      this.app.$store.dispatch('updateConversation', payload);
+    }
+    this.fetchConversationStats();
+    this.emitPipelineConversationChanged(payload);
   };
 
   onConversationCreated = data => {
@@ -108,6 +121,7 @@ class ActionCableConnector extends BaseActionCableConnector {
 
   onConversationRead = data => {
     this.app.$store.dispatch('updateConversation', data);
+    this.emitPipelineConversationChanged(data);
   };
 
   // eslint-disable-next-line class-methods-use-this
@@ -124,6 +138,7 @@ class ActionCableConnector extends BaseActionCableConnector {
       lastActivityAt,
       conversationId,
     });
+    this.emitPipelineConversationChanged({ id: conversationId });
   };
 
   // eslint-disable-next-line class-methods-use-this
@@ -132,11 +147,23 @@ class ActionCableConnector extends BaseActionCableConnector {
   onStatusChange = data => {
     this.app.$store.dispatch('updateConversation', data);
     this.fetchConversationStats();
+    this.emitPipelineConversationChanged(data);
   };
 
   onConversationUpdated = data => {
     this.app.$store.dispatch('updateConversation', data);
     this.fetchConversationStats();
+    this.emitPipelineConversationChanged(data);
+  };
+
+  // eslint-disable-next-line class-methods-use-this
+  onPipelineItemChanged = data => {
+    emitter.emit(BUS_EVENTS.PIPELINE_ITEM_CHANGED, data);
+  };
+
+  // eslint-disable-next-line class-methods-use-this
+  emitPipelineConversationChanged = data => {
+    emitter.emit(BUS_EVENTS.PIPELINE_CONVERSATION_CHANGED, data);
   };
 
   onConversationUnreadCountChanged = () => {

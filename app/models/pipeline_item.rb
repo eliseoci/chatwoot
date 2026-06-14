@@ -52,6 +52,8 @@ class PipelineItem < ApplicationRecord
   validates :value, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validate :associations_share_account
   validate :stage_belongs_to_pipeline
+  after_create_commit :broadcast_created
+  after_update_commit :broadcast_updated
 
   def display_title
     title.presence || contact.name.presence || contact.email.presence || contact.phone_number
@@ -62,6 +64,20 @@ class PipelineItem < ApplicationRecord
   end
 
   private
+
+  def broadcast_created
+    Pipelines::Items::RealtimeBroadcastService.call(
+      self,
+      event_name: PIPELINE_ITEM_CREATED
+    )
+  end
+
+  def broadcast_updated
+    Pipelines::Items::RealtimeBroadcastService.call(
+      self,
+      event_name: PIPELINE_ITEM_UPDATED
+    )
+  end
 
   def associations_share_account
     return if account_id.blank?

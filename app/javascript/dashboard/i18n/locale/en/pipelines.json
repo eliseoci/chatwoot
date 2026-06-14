@@ -6,6 +6,75 @@
     "ADD_ITEM": "Add item",
     "LOADING": "Loading pipeline",
     "EMPTY_STAGE": "No items in this stage",
+    "VIEWS": {
+      "LABEL": "Pipeline view",
+      "KANBAN": "Kanban",
+      "LIST": "List",
+      "ATTENTION": "Attention"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "Search pipeline items",
+      "SEARCH_PLACEHOLDER": "Search items or contacts",
+      "CLEAR": "Clear filters",
+      "SORT": "Sort pipeline items",
+      "SORT_RECENT": "Most recent activity",
+      "SORT_OLDEST": "Oldest activity",
+      "SORT_NEXT_ACTIVITY": "Next activity",
+      "SORT_PRIORITY": "Highest priority",
+      "STAGE": "Filter by stage",
+      "ALL_STAGES": "All stages",
+      "OWNER": "Filter by owner",
+      "ALL_OWNERS": "All owners",
+      "TEAM": "Filter by team",
+      "ALL_TEAMS": "All teams",
+      "INBOX": "Filter by inbox",
+      "ALL_INBOXES": "All inboxes",
+      "CHANNEL": "Filter by channel",
+      "ALL_CHANNELS": "All channels",
+      "LABEL": "Filter by label",
+      "ALL_LABELS": "All labels",
+      "DUE_STATE": "Filter by next activity",
+      "ANY_DUE_STATE": "Any next activity",
+      "OVERDUE": "Overdue",
+      "UPCOMING": "Upcoming",
+      "MISSING": "Missing next activity"
+    },
+    "LIST": {
+      "ITEM": "Item",
+      "STAGE": "Stage",
+      "OWNER_TEAM": "Owner and team",
+      "CHANNEL": "Channel",
+      "LAST_ACTIVITY": "Last activity",
+      "NEXT_ACTIVITY": "Next activity",
+      "PRIORITY": "Priority",
+      "ATTENTION": "Attention",
+      "ACTIONS": "Actions",
+      "NO_ACTIVITY": "No activity",
+      "NO_CHANNEL": "No linked channel",
+      "NO_NEXT_ACTIVITY": "Not scheduled",
+      "NO_PRIORITY": "No priority",
+      "EMPTY_TITLE": "No items match this view",
+      "EMPTY_DESCRIPTION": "Adjust the search or filters to see more pipeline items."
+    },
+    "ATTENTION": {
+      "NONE": "No attention needed",
+      "EMPTY_TITLE": "No items need attention",
+      "EMPTY_DESCRIPTION": "Overdue, stalled, unread, handed-off, and unscheduled work will appear here.",
+      "REASONS": {
+        "OVERDUE_ACTIVITY": "Overdue",
+        "UNREAD_CONVERSATION": "Unread",
+        "HANDOFF": "Handoff",
+        "MISSING_NEXT_ACTIVITY": "No next action",
+        "STALLED": "Stalled"
+      }
+    },
+    "STATES": {
+      "FORBIDDEN_TITLE": "Pipeline access unavailable",
+      "FORBIDDEN_DESCRIPTION": "You do not have permission to view this pipeline workspace.",
+      "ERROR_TITLE": "Pipeline workspace unavailable",
+      "ERROR_DESCRIPTION": "The workspace could not be loaded. Your conversation data was not changed.",
+      "RETRY": "Try again"
+    },
     "MOVE": {
       "DRAG_LABEL": "Drag {title} to another stage",
       "COMMAND_LABEL": "Move {title} to another stage"

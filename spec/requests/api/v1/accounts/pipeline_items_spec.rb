@@ -156,6 +156,57 @@ RSpec.describe 'Pipeline Items API', type: :request do
           as: :json
       expect(response.parsed_body.pluck('id')).to eq([linked_item.id])
     end
+
+    it 'filters the operating workspace and returns attention context' do
+      owner = create(:user, account: account)
+      team = create(:team, account: account)
+      item = create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: pipeline.stages.first,
+        contact: contact,
+        owner: owner,
+        team: team,
+        title: 'Renewal'
+      )
+      conversation = create(:conversation, account: account, contact: contact)
+      create(:inbox_member, user: agent, inbox: conversation.inbox)
+      conversation.update!(label_list: ['vip'])
+      create(
+        :pipeline_item_conversation,
+        account: account,
+        pipeline_item: item,
+        conversation: conversation,
+        linked_by: agent
+      )
+      create(
+        :pipeline_activity,
+        account: account,
+        pipeline_item: item,
+        due_at: 1.hour.ago
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items",
+          params: {
+            pipeline_id: pipeline.id,
+            q: 'renew',
+            stage_id: item.stage_id,
+            owner_id: owner.id,
+            team_id: team.id,
+            inbox_id: conversation.inbox_id,
+            channel: conversation.inbox.channel_type,
+            label: 'vip',
+            due_state: 'overdue'
+          },
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.pluck('id')).to eq([item.id])
+      expect(response.parsed_body.first.dig('workspace', 'attention_reasons')).to include('overdue_activity')
+      expect(response.parsed_body.first.dig('workspace', 'inboxes', 0, 'id')).to eq(conversation.inbox_id)
+    end
   end
 
   describe 'GET /api/v1/accounts/:account_id/pipeline_items/:id' do

@@ -1,12 +1,23 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
+import { useEmitter } from 'dashboard/composables/emitter';
+import { useUISettings } from 'dashboard/composables/useUISettings';
 import Draggable from 'vuedraggable';
 
 import AgentsAPI from 'dashboard/api/agents';
 import ContactAPI from 'dashboard/api/contacts';
+import InboxesAPI from 'dashboard/api/inboxes';
+import LabelsAPI from 'dashboard/api/labels';
 import PipelineActivitiesAPI from 'dashboard/api/pipelineActivities';
 import PipelineItemsAPI from 'dashboard/api/pipelineItems';
 import PipelinesAPI from 'dashboard/api/pipelines';
@@ -15,25 +26,42 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
+import { BUS_EVENTS } from 'shared/constants/busEvents';
 import PipelineItemDetails from './components/PipelineItemDetails.vue';
+import PipelineItemTable from './components/PipelineItemTable.vue';
+import PipelineWorkspaceToolbar from './components/PipelineWorkspaceToolbar.vue';
 import {
   buildPipelineActivityPayload,
   sortActivities,
 } from './helpers/activities';
 import { buildPipelineItemPayload, groupItemsByStage } from './helpers/board';
+import {
+  attentionItems,
+  channelTranslationKey,
+  conversationChangeAffectsItems,
+  DEFAULT_PIPELINE_FILTERS,
+  mergePipelineWorkspacePreference,
+  pipelineLoadStateForError,
+  readPipelineWorkspacePreference,
+  sortPipelineItems,
+} from './helpers/workspace';
 
 const route = useRoute();
 const router = useRouter();
 const { locale, t } = useI18n();
+const { uiSettings, updateUISettings } = useUISettings();
 
 const pipelines = ref([]);
 const items = ref([]);
 const contacts = ref([]);
 const agents = ref([]);
 const teams = ref([]);
+const inboxes = ref([]);
+const labels = ref([]);
 const activePipelineId = ref(null);
 const columns = ref([]);
 const isLoading = ref(true);
+const loadState = ref('ready');
 const isCreating = ref(false);
 const dialogRef = ref(null);
 const expandedTimelineItems = ref([]);
@@ -46,8 +74,13 @@ const activities = ref([]);
 const isLoadingActivities = ref(false);
 const activeActivityId = ref(null);
 const activeActivityAction = ref(null);
+const viewMode = ref('kanban');
+const filters = reactive({ ...DEFAULT_PIPELINE_FILTERS });
 let conversationOperationSequence = 0;
 let activityOperationSequence = 0;
+let itemsRequestSequence = 0;
+let filterRefreshTimer = null;
+let realtimeRefreshTimer = null;
 
 const form = reactive({
   title: '',
@@ -62,6 +95,14 @@ const form = reactive({
 
 const activePipeline = computed(() =>
   pipelines.value.find(pipeline => pipeline.id === activePipelineId.value)
+);
+
+const sortedItems = computed(() => sortPipelineItems(items.value, filters.sort));
+
+const visibleItems = computed(() =>
+  viewMode.value === 'attention'
+    ? attentionItems(sortedItems.value)
+    : sortedItems.value
 );
 
 const isCreateDisabled = computed(() => !form.stageId || !form.contactId);
@@ -104,6 +145,29 @@ const formatActivityTime = dueAt =>
 const activityTypeLabel = activityType =>
   t(`PIPELINES_BOARD.ACTIVITIES.TYPE.${activityType.toUpperCase()}`);
 
+const channelLabel = channelType => {
+  const key = `PIPELINES_BOARD.DETAIL.CHANNEL.${channelTranslationKey(
+    channelType
+  )}`;
+  const translated = t(key);
+  return translated === key
+    ? t('PIPELINES_BOARD.DETAIL.CHANNEL.OTHER')
+    : translated;
+};
+
+const channelOptions = computed(() =>
+  [...new Set(inboxes.value.map(inbox => inbox.channel_type))]
+    .filter(Boolean)
+    .sort()
+    .map(channel => ({
+      value: channel,
+      label: channelLabel(channel),
+    }))
+);
+
+const attentionReasonLabel = reason =>
+  t(`PIPELINES_BOARD.ATTENTION.REASONS.${reason.toUpperCase()}`);
+
 const timelineActor = transition =>
   transition.actor?.name || t('PIPELINES_BOARD.TIMELINE.SYSTEM_ACTOR');
 
@@ -114,11 +178,13 @@ const timelineConversation = transition =>
 const syncColumns = () => {
   columns.value = groupItemsByStage(
     activePipeline.value?.stages || [],
-    items.value
+    sortedItems.value
   );
 };
 
 const loadItems = async () => {
+  const requestId = ++itemsRequestSequence;
+  const pipelineId = activePipelineId.value;
   if (!activePipelineId.value) {
     items.value = [];
     syncColumns();
@@ -126,27 +192,73 @@ const loadItems = async () => {
   }
 
   const response = await PipelineItemsAPI.get({
-    pipelineId: activePipelineId.value,
+    pipelineId,
+    ...filters,
   });
+  if (
+    requestId !== itemsRequestSequence ||
+    pipelineId !== activePipelineId.value
+  ) {
+    return;
+  }
   items.value = response.data;
   syncColumns();
 };
 
+const restoreWorkspacePreference = () => {
+  if (!activePipelineId.value) return;
+
+  const preference = readPipelineWorkspacePreference(
+    uiSettings.value,
+    route.params.accountId,
+    activePipelineId.value
+  );
+  viewMode.value = preference.viewMode;
+  Object.assign(filters, preference.filters);
+};
+
+const saveWorkspacePreference = () => {
+  if (!activePipelineId.value) return;
+
+  updateUISettings({
+    pipeline_workspace_preferences: mergePipelineWorkspacePreference(
+      uiSettings.value,
+      route.params.accountId,
+      activePipelineId.value,
+      {
+        viewMode: viewMode.value,
+        filters,
+      }
+    ),
+  });
+};
+
 const loadBoard = async () => {
   isLoading.value = true;
+  loadState.value = 'ready';
   try {
-    const [pipelinesResponse, contactsResponse, agentsResponse, teamsResponse] =
-      await Promise.all([
-        PipelinesAPI.get(),
-        ContactAPI.get(1),
-        AgentsAPI.get(),
-        TeamsAPI.get(),
-      ]);
+    const [
+      pipelinesResponse,
+      contactsResponse,
+      agentsResponse,
+      teamsResponse,
+      inboxesResponse,
+      labelsResponse,
+    ] = await Promise.all([
+      PipelinesAPI.get(),
+      ContactAPI.get(1),
+      AgentsAPI.get(),
+      TeamsAPI.get(),
+      InboxesAPI.get(),
+      LabelsAPI.get(),
+    ]);
 
     pipelines.value = pipelinesResponse.data;
     contacts.value = contactsResponse.data.payload;
     agents.value = agentsResponse.data;
     teams.value = teamsResponse.data;
+    inboxes.value = inboxesResponse.data.payload;
+    labels.value = labelsResponse.data.payload;
 
     const routePipelineId = Number(route.params.pipelineId);
     activePipelineId.value =
@@ -154,12 +266,41 @@ const loadBoard = async () => {
       pipelines.value[0]?.id ||
       null;
 
+    restoreWorkspacePreference();
     await loadItems();
   } catch (error) {
-    useAlert(t('PIPELINES_BOARD.API.LOAD_ERROR'));
+    loadState.value = pipelineLoadStateForError(error);
   } finally {
     isLoading.value = false;
   }
+};
+
+const refreshFilteredItems = () => {
+  clearTimeout(filterRefreshTimer);
+  filterRefreshTimer = setTimeout(async () => {
+    saveWorkspacePreference();
+    try {
+      await loadItems();
+      loadState.value = 'ready';
+    } catch (error) {
+      loadState.value = pipelineLoadStateForError(error);
+    }
+  }, 250);
+};
+
+const updateFilters = nextFilters => {
+  Object.assign(filters, nextFilters);
+  refreshFilteredItems();
+};
+
+const clearFilters = () => {
+  Object.assign(filters, DEFAULT_PIPELINE_FILTERS);
+  refreshFilteredItems();
+};
+
+const updateViewMode = mode => {
+  viewMode.value = mode;
+  saveWorkspacePreference();
 };
 
 const resetForm = () => {
@@ -249,6 +390,10 @@ const moveItemWithCommand = (item, event) => {
     'board_command',
     true
   );
+};
+
+const moveItemFromList = ({ item, stageId }) => {
+  transitionItem(item, stageId, 'board_command', true);
 };
 
 const toggleTimeline = async item => {
@@ -483,6 +628,7 @@ const openConversation = conversationId => {
 };
 
 const changePipeline = async () => {
+  restoreWorkspacePreference();
   await router.push({
     name: 'pipelines_board',
     params: { pipelineId: activePipelineId.value },
@@ -495,6 +641,38 @@ const changePipeline = async () => {
   }
 };
 
+const scheduleRealtimeRefresh = () => {
+  clearTimeout(realtimeRefreshTimer);
+  realtimeRefreshTimer = setTimeout(async () => {
+    try {
+      await loadItems();
+    } catch (error) {
+      loadState.value = pipelineLoadStateForError(error);
+    }
+  }, 150);
+};
+
+const handlePipelineItemChanged = payload => {
+  if (Number(payload.pipeline_id) !== activePipelineId.value) return;
+
+  scheduleRealtimeRefresh();
+};
+
+const handlePipelineConversationChanged = payload => {
+  const conversationId = payload.id || payload.conversation_id;
+  if (!conversationId) return;
+  if (!conversationChangeAffectsItems(items.value, conversationId)) return;
+
+  scheduleRealtimeRefresh();
+};
+
+useEmitter(BUS_EVENTS.PIPELINE_ITEM_CHANGED, handlePipelineItemChanged);
+useEmitter(
+  BUS_EVENTS.PIPELINE_CONVERSATION_CHANGED,
+  handlePipelineConversationChanged
+);
+useEmitter(BUS_EVENTS.WEBSOCKET_RECONNECT_COMPLETED, scheduleRealtimeRefresh);
+
 watch(
   () => route.params.pipelineId,
   pipelineId => {
@@ -505,12 +683,17 @@ watch(
       pipelines.value.some(pipeline => pipeline.id === parsedPipelineId)
     ) {
       activePipelineId.value = parsedPipelineId;
+      restoreWorkspacePreference();
       loadItems();
     }
   }
 );
 
 onMounted(loadBoard);
+onBeforeUnmount(() => {
+  clearTimeout(filterRefreshTimer);
+  clearTimeout(realtimeRefreshTimer);
+});
 </script>
 
 <template>
@@ -568,6 +751,37 @@ onMounted(loadBoard);
     </div>
 
     <div
+      v-else-if="loadState === 'forbidden'"
+      class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
+    >
+      <Icon icon="i-lucide-shield-alert" class="size-8 text-n-ruby-10" />
+      <div>
+        <h2 class="text-heading-2 text-n-slate-12">
+          {{ $t('PIPELINES_BOARD.STATES.FORBIDDEN_TITLE') }}
+        </h2>
+        <p class="mb-0 text-sm text-n-slate-11">
+          {{ $t('PIPELINES_BOARD.STATES.FORBIDDEN_DESCRIPTION') }}
+        </p>
+      </div>
+    </div>
+
+    <div
+      v-else-if="loadState === 'error'"
+      class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
+    >
+      <Icon icon="i-lucide-triangle-alert" class="size-8 text-n-amber-10" />
+      <div>
+        <h2 class="text-heading-2 text-n-slate-12">
+          {{ $t('PIPELINES_BOARD.STATES.ERROR_TITLE') }}
+        </h2>
+        <p class="mb-0 text-sm text-n-slate-11">
+          {{ $t('PIPELINES_BOARD.STATES.ERROR_DESCRIPTION') }}
+        </p>
+      </div>
+      <Button :label="$t('PIPELINES_BOARD.STATES.RETRY')" @click="loadBoard" />
+    </div>
+
+    <div
       v-else-if="!pipelines.length"
       class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
     >
@@ -585,7 +799,25 @@ onMounted(loadBoard);
       </router-link>
     </div>
 
-    <main v-else class="flex flex-1 gap-4 overflow-x-auto p-5">
+    <template v-else>
+      <PipelineWorkspaceToolbar
+        :view-mode="viewMode"
+        :filters="filters"
+        :stages="activePipeline?.stages || []"
+        :agents="agents"
+        :teams="teams"
+        :inboxes="inboxes"
+        :labels="labels"
+        :channels="channelOptions"
+        @update:view-mode="updateViewMode"
+        @update:filters="updateFilters"
+        @clear="clearFilters"
+      />
+
+      <main
+        v-if="viewMode === 'kanban'"
+        class="flex flex-1 gap-4 overflow-x-auto p-5"
+      >
       <section
         v-for="column in columns"
         :key="column.id"
@@ -659,6 +891,25 @@ onMounted(loadBoard);
                   class="rounded-md bg-n-alpha-black2 px-2 py-1 text-xs text-n-slate-11"
                 >
                   {{ formatDueDate(item.due_date) }}
+                </span>
+              </div>
+
+              <div
+                v-if="item.workspace?.attention_reasons?.length"
+                class="flex flex-wrap gap-1"
+              >
+                <span
+                  v-for="reason in item.workspace.attention_reasons.slice(0, 2)"
+                  :key="reason"
+                  class="rounded-md bg-n-ruby-3 px-1.5 py-0.5 text-xs text-n-ruby-11"
+                >
+                  {{ attentionReasonLabel(reason) }}
+                </span>
+                <span
+                  v-if="item.workspace.attention_reasons.length > 2"
+                  class="rounded-md bg-n-alpha-black2 px-1.5 py-0.5 text-xs text-n-slate-10"
+                >
+                  +{{ item.workspace.attention_reasons.length - 2 }}
                 </span>
               </div>
 
@@ -854,7 +1105,17 @@ onMounted(loadBoard);
           </template>
         </Draggable>
       </section>
-    </main>
+      </main>
+
+      <PipelineItemTable
+        v-else
+        :items="visibleItems"
+        :stages="activePipeline?.stages || []"
+        :attention-mode="viewMode === 'attention'"
+        @move="moveItemFromList"
+        @open="openItemDetails"
+      />
+    </template>
 
     <Dialog
       ref="dialogRef"

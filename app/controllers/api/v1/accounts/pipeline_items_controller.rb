@@ -16,6 +16,11 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
     @pipeline_items = @pipeline_items.where(pipeline: fetch_pipeline) if params[:pipeline_id].present?
     @pipeline_items = @pipeline_items.where(contact: fetch_contact) if params[:contact_id].present?
     @pipeline_items = filter_by_conversation(@pipeline_items) if params[:conversation_id].present?
+    @pipeline_items = Pipelines::Items::FilterService.new(
+      scope: @pipeline_items,
+      params: filter_params
+    ).perform
+    @workspace_context = Pipelines::Items::WorkspaceContextService.new(@pipeline_items).perform
   end
 
   def show
@@ -86,9 +91,9 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def pipeline_items_scope
     Current.account.pipeline_items
-           .includes(:pipeline, :stage, :contact, :owner, :team,
-                     scheduled_activities: :assignee,
-                     conversation_links: [:linked_by, { conversation: [:inbox, :assignee] }])
+           .preload(:pipeline, :stage, :contact, :owner, :team,
+                    scheduled_activities: :assignee,
+                    conversation_links: [:linked_by, { conversation: [:inbox, :assignee] }])
            .order(created_at: :desc)
   end
 
@@ -170,6 +175,19 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
 
   def pipeline_item_attributes
     params.require(:pipeline_item).permit(:title, :priority, :value, :due_date)
+  end
+
+  def filter_params
+    params.permit(
+      :q,
+      :stage_id,
+      :owner_id,
+      :team_id,
+      :inbox_id,
+      :channel,
+      :label,
+      :due_state
+    )
   end
 
   def ownership_params
