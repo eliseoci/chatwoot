@@ -155,6 +155,7 @@ jobs:
             app/javascript/dashboard/helper/specs/actionCable.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineItemTable.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineItemDetails.spec.js \
+            app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineReport.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/components/specs/PipelineWorkspaceToolbar.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/activities.spec.js \
             app/javascript/dashboard/routes/dashboard/pipelines/helpers/board.spec.js \
