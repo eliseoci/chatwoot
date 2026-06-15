@@ -45,6 +45,7 @@ const modes = [
   { value: 'kanban', icon: 'i-lucide-columns-3' },
   { value: 'list', icon: 'i-lucide-list' },
   { value: 'attention', icon: 'i-lucide-circle-alert' },
+  { value: 'report', icon: 'i-lucide-chart-no-axes-column-increasing' },
 ];
 
 const hasActiveFilters = computed(() =>
@@ -87,7 +88,7 @@ const updateFilter = (key, value) => {
         </button>
       </div>
 
-      <label class="relative min-w-56 flex-1">
+      <label v-if="viewMode !== 'report'" class="relative min-w-56 flex-1">
         <span class="sr-only">
           {{ $t('PIPELINES_BOARD.FILTERS.SEARCH_LABEL') }}
         </span>
@@ -105,7 +106,7 @@ const updateFilter = (key, value) => {
       </label>
 
       <Button
-        v-if="hasActiveFilters"
+        v-if="viewMode !== 'report' && hasActiveFilters"
         variant="ghost"
         color="slate"
         size="sm"
@@ -115,7 +116,7 @@ const updateFilter = (key, value) => {
       />
     </div>
 
-    <div class="flex gap-2 overflow-x-auto pb-1">
+    <div v-if="viewMode !== 'report'" class="flex gap-2 overflow-x-auto pb-1">
       <select
         :value="filters.sort"
         :aria-label="$t('PIPELINES_BOARD.FILTERS.SORT')"

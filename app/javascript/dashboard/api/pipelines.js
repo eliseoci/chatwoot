@@ -9,6 +9,10 @@ class PipelinesAPI extends ApiClient {
   getTemplates() {
     return axios.get(`${this.url}/templates`);
   }
+
+  getReport(id) {
+    return axios.get(`${this.url}/${id}/report`);
+  }
 }
 
 export default new PipelinesAPI();

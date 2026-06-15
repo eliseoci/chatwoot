@@ -30,7 +30,9 @@ export const readPipelineWorkspacePreference = (
     ];
 
   return {
-    viewMode: ['kanban', 'list', 'attention'].includes(preference?.viewMode)
+    viewMode: ['kanban', 'list', 'attention', 'report'].includes(
+      preference?.viewMode
+    )
       ? preference.viewMode
       : 'kanban',
     filters: normalizePipelineFilters(preference?.filters),

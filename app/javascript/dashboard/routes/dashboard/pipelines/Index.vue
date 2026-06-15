@@ -29,6 +29,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import PipelineItemDetails from './components/PipelineItemDetails.vue';
 import PipelineItemTable from './components/PipelineItemTable.vue';
+import PipelineReport from './components/PipelineReport.vue';
 import PipelineWorkspaceToolbar from './components/PipelineWorkspaceToolbar.vue';
 import {
   buildPipelineActivityPayload,
@@ -82,10 +83,14 @@ const activeActivityAction = ref(null);
 const isSavingFieldValues = ref(false);
 const promptedRequiredFieldKeys = ref([]);
 const viewMode = ref('kanban');
+const report = ref(null);
+const isLoadingReport = ref(false);
+const reportLoadState = ref('ready');
 const filters = reactive({ ...DEFAULT_PIPELINE_FILTERS });
 let conversationOperationSequence = 0;
 let activityOperationSequence = 0;
 let itemsRequestSequence = 0;
+let reportRequestSequence = 0;
 let filterRefreshTimer = null;
 let realtimeRefreshTimer = null;
 
@@ -238,6 +243,43 @@ const loadItems = async () => {
   syncColumns();
 };
 
+const loadReport = async () => {
+  const requestId = ++reportRequestSequence;
+  const pipelineId = activePipelineId.value;
+  if (!pipelineId) {
+    report.value = null;
+    isLoadingReport.value = false;
+    reportLoadState.value = 'ready';
+    return;
+  }
+
+  isLoadingReport.value = true;
+  reportLoadState.value = 'ready';
+  try {
+    const response = await PipelinesAPI.getReport(pipelineId);
+    if (
+      requestId !== reportRequestSequence ||
+      pipelineId !== activePipelineId.value
+    ) {
+      return;
+    }
+    report.value = response.data;
+  } catch {
+    if (
+      requestId !== reportRequestSequence ||
+      pipelineId !== activePipelineId.value
+    ) {
+      return;
+    }
+    report.value = null;
+    reportLoadState.value = 'error';
+  } finally {
+    if (requestId === reportRequestSequence) {
+      isLoadingReport.value = false;
+    }
+  }
+};
+
 const restoreWorkspacePreference = () => {
   if (!activePipelineId.value) return;
 
@@ -301,6 +343,7 @@ const loadBoard = async () => {
 
     restoreWorkspacePreference();
     await loadItems();
+    if (viewMode.value === 'report') await loadReport();
     const requestedItem = items.value.find(
       item => item.id === Number(route.query.itemId)
     );
@@ -335,9 +378,10 @@ const clearFilters = () => {
   refreshFilteredItems();
 };
 
-const updateViewMode = mode => {
+const updateViewMode = async mode => {
   viewMode.value = mode;
   saveWorkspacePreference();
+  if (mode === 'report') await loadReport();
 };
 
 const resetForm = () => {
@@ -728,7 +772,10 @@ const changePipeline = async () => {
   });
 
   try {
-    await loadItems();
+    await Promise.all([
+      loadItems(),
+      viewMode.value === 'report' ? loadReport() : Promise.resolve(),
+    ]);
   } catch (error) {
     useAlert(t('PIPELINES_BOARD.API.LOAD_ERROR'));
   }
@@ -738,7 +785,10 @@ const scheduleRealtimeRefresh = () => {
   clearTimeout(realtimeRefreshTimer);
   realtimeRefreshTimer = setTimeout(async () => {
     try {
-      await loadItems();
+      await Promise.all([
+        loadItems(),
+        viewMode.value === 'report' ? loadReport() : Promise.resolve(),
+      ]);
     } catch (error) {
       loadState.value = pipelineLoadStateForError(error);
     }
@@ -768,7 +818,7 @@ useEmitter(BUS_EVENTS.WEBSOCKET_RECONNECT_COMPLETED, scheduleRealtimeRefresh);
 
 watch(
   () => route.params.pipelineId,
-  pipelineId => {
+  async pipelineId => {
     const parsedPipelineId = Number(pipelineId);
     if (
       parsedPipelineId &&
@@ -777,7 +827,14 @@ watch(
     ) {
       activePipelineId.value = parsedPipelineId;
       restoreWorkspacePreference();
-      loadItems();
+      try {
+        await Promise.all([
+          loadItems(),
+          viewMode.value === 'report' ? loadReport() : Promise.resolve(),
+        ]);
+      } catch (error) {
+        loadState.value = pipelineLoadStateForError(error);
+      }
     }
   }
 );
@@ -827,7 +884,11 @@ onBeforeUnmount(() => {
           </option>
         </select>
         <Button
-          v-if="activePipeline && activeCapabilities.canCreate"
+          v-if="
+            activePipeline &&
+            activeCapabilities.canCreate &&
+            viewMode !== 'report'
+          "
           size="sm"
           icon="i-lucide-plus"
           :label="$t('PIPELINES_BOARD.ADD_ITEM')"
@@ -907,8 +968,16 @@ onBeforeUnmount(() => {
         @clear="clearFilters"
       />
 
+      <PipelineReport
+        v-if="viewMode === 'report'"
+        :report="report"
+        :is-loading="isLoadingReport"
+        :load-state="reportLoadState"
+        @retry="loadReport"
+      />
+
       <main
-        v-if="viewMode === 'kanban'"
+        v-else-if="viewMode === 'kanban'"
         class="flex flex-1 gap-4 overflow-x-auto p-5"
       >
       <section

@@ -10,7 +10,53 @@
       "LABEL": "Pipeline view",
       "KANBAN": "Kanban",
       "LIST": "List",
-      "ATTENTION": "Attention"
+      "ATTENTION": "Attention",
+      "REPORT": "Report"
+    },
+    "REPORTS": {
+      "TITLE": "Pipeline report",
+      "DESCRIPTION": "Review stage health, workload, outcomes, and conversation attribution.",
+      "AS_OF": "Updated {date} · {timezone}",
+      "LOADING": "Loading pipeline report",
+      "ERROR_TITLE": "Pipeline report unavailable",
+      "ERROR_DESCRIPTION": "The operational snapshot could not be loaded. Pipeline data was not changed.",
+      "RETRY": "Try again",
+      "EMPTY": "No reporting data is available yet.",
+      "STAGES": {
+        "TITLE": "Stage health",
+        "STAGE": "Stage",
+        "ITEMS": "Items",
+        "AVERAGE_AGE": "Average age",
+        "OLDEST_AGE": "Oldest item"
+      },
+      "ACTIVITIES": {
+        "TITLE": "Activity workload",
+        "OWNER": "Owner",
+        "DUE": "Due",
+        "OVERDUE": "Overdue",
+        "COMPLETED": "Completed",
+        "CANCELED": "Canceled",
+        "UNASSIGNED": "Unassigned"
+      },
+      "OUTCOMES": {
+        "TITLE": "Terminal outcomes",
+        "OUTCOME": "Outcome",
+        "NO_REASON": "No reason recorded"
+      },
+      "ATTRIBUTION": {
+        "TITLE": "Conversation attribution",
+        "SOURCES": "Sources",
+        "INBOXES": "Inboxes",
+        "CHANNELS": "Channels",
+        "SOURCE": {
+          "API": "API",
+          "ITEM_DETAIL": "Item details",
+          "CONVERSATION_SIDEBAR": "Conversation sidebar",
+          "AUTOMATION": "Automation",
+          "CONVERSATION_CREATED": "New conversation",
+          "MANUAL_OVERRIDE": "Manual override"
+        }
+      }
     },
     "FILTERS": {
       "SEARCH_LABEL": "Search pipeline items",
