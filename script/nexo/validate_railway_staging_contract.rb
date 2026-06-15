@@ -123,6 +123,7 @@ errors << 'all Pipeline migrations must be recorded' unless verification['pipeli
 errors << 'post-migration count must include all Pipeline migrations' unless verification['post_migration_count'] == verification['pre_migration_count'].to_i + 12
 errors << 'object-storage smoke verification is missing' unless verification['storage_upload_read_delete_verified'] == true
 errors << 'Pipeline/conversation smoke verification is missing' unless verification['pipeline_conversation_smoke_verified'] == true
+errors << 'core message persistence verification is missing' unless verification['core_message_persistence_verified'] == true
 errors << 'synthetic records must be rolled back' unless verification['synthetic_records_rolled_back'] == true
 errors << 'image roll-forward verification is missing' unless verification['rollforward_verified'] == true
 

@@ -54,6 +54,12 @@ Deployment `19a3565b-e7f0-465b-803a-01fe9777cb63` verified:
 - Pipeline state did not change Chatwoot conversation status
 - all synthetic database records rolled back
 
+Deployment `51384514-7e5a-4594-bf2d-757aae23e8b0` separately verified
+synthetic incoming-message persistence through the conversation association,
+confirmed the conversation remained open, and rolled all records back. Worker
+was restored to its long-running Sidekiq command in deployment
+`56cbb8bf-8dac-468d-ab7f-ab759d7f32f8`.
+
 The final database contains zero accounts, contacts, conversations, messages,
 pipelines, and pipeline items.
 
@@ -66,7 +72,7 @@ Password hashes were verified equal without exposing values.
 ## Health evidence
 
 - Web deployment: `bb55b246-a955-469a-bc5f-b9c9bc5ce56d`
-- Worker deployment: `71ca0c33-09b2-454e-93f0-a1c1e9ac50b6`
+- Worker deployment: `56cbb8bf-8dac-468d-ab7f-ab759d7f32f8`
 - Valkey deployment: `6ac92df7-7bc0-4f0e-9da4-40dec0b904d1`
 - Web URL: `https://nexo-chatwoot-web-staging.up.railway.app`
 - Web `/health`: HTTP 200 with `{"status":"woot"}`
@@ -102,8 +108,24 @@ ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:8576d9d3a9535a59fc729e
 
 ## Database rollback policy
 
-Pipeline migrations are additive except where automation columns are replaced
-by normalized action tables. Use this decision rule:
+Use the following strategy for every Pipeline migration:
+
+| Migration | Change shape | Before customer writes | After customer writes |
+| --- | --- | --- | --- |
+| `20260614000000_create_pipelines` | Adds pipelines and stages | Restore backup and prior image | Keep schema; forward-fix |
+| `20260614001000_create_pipeline_items` | Adds items | Restore backup and prior image | Keep schema; forward-fix |
+| `20260614002000_create_pipeline_item_stage_transitions` | Adds transition history | Restore backup and prior image | Preserve history; forward-fix |
+| `20260614003000_create_pipeline_item_conversations_and_events` | Adds links and events | Restore backup and prior image | Preserve audit data; forward-fix |
+| `20260614004000_create_pipeline_intake_rules` | Adds rules and expands link/event constraints | Restore backup and prior image | Keep expanded schema; forward-fix |
+| `20260614005000_create_pipeline_activities` | Adds activities | Restore backup and prior image | Preserve activities; forward-fix |
+| `20260614006000_add_pipeline_item_ownership_events` | Adds activity/event metadata and ownership events | Restore backup and prior image | Preserve audit metadata; forward-fix |
+| `20260614007000_add_pipeline_custom_fields` | Adds field definitions and JSON values | Restore backup and prior image | Preserve custom-field data; forward-fix |
+| `20260614008000_create_pipeline_automations` | Adds rules and run history | Restore backup and prior image | Preserve automation history; forward-fix |
+| `20260614009000_expand_pipeline_automations` | Normalizes action columns into action tables and removes legacy columns | Restore backup; do not rely on column recreation | Never run destructive down logic; forward-fix |
+| `20260614010000_add_pipeline_access_control` | Adds access mode and grants | Restore backup and prior image | Preserve grants; forward-fix |
+| `20260615010000_add_outcome_reason_to_pipeline_item_stage_transitions` | Adds outcome reason | Restore backup and prior image | Preserve outcome data; forward-fix |
+
+Operational decision rule:
 
 1. Before customer writes: stop Web and Worker, restore the verified backup,
    then deploy the prior image digest.

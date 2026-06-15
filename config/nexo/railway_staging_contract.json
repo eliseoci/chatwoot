@@ -52,7 +52,7 @@
       },
       "restart_policy": "ALWAYS",
       "persistent_volume": false,
-      "verified_deployment_id": "71ca0c33-09b2-454e-93f0-a1c1e9ac50b6"
+      "verified_deployment_id": "56cbb8bf-8dac-468d-ab7f-ab759d7f32f8"
     },
     "postgres": {
       "id": "b89dbdad-1346-47b3-984a-2ab37d14f693",
@@ -108,8 +108,10 @@
     "post_migration_count": 147,
     "pipeline_migration_count": 12,
     "smoke_deployment_id": "19a3565b-e7f0-465b-803a-01fe9777cb63",
+    "message_smoke_deployment_id": "51384514-7e5a-4594-bf2d-757aae23e8b0",
     "storage_upload_read_delete_verified": true,
     "pipeline_conversation_smoke_verified": true,
+    "core_message_persistence_verified": true,
     "synthetic_records_rolled_back": true,
     "rollback_image": "ghcr.io/railwayapp-templates/chatwoot:Community@sha256:cdab29d860f4966e32dcac0997099857813a7d7100a43db1d414c2c3199106e8",
     "rollback_web_deployment_id": "9f455763-96d3-49e0-b5ac-4f20055aea86",
