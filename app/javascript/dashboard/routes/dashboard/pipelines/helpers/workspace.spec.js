@@ -51,6 +51,23 @@ describe('pipeline workspace preferences', () => {
       filters: { ...DEFAULT_PIPELINE_FILTERS, q: 'Acme' },
     });
   });
+
+  it('restores the report workspace mode', () => {
+    expect(
+      readPipelineWorkspacePreference(
+        {
+          pipeline_workspace_preferences: {
+            1: { 2: { viewMode: 'report' } },
+          },
+        },
+        1,
+        2
+      )
+    ).toEqual({
+      viewMode: 'report',
+      filters: DEFAULT_PIPELINE_FILTERS,
+    });
+  });
 });
 
 describe('pipeline workspace context', () => {

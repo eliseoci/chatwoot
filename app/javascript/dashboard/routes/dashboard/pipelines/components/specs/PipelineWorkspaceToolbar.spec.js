@@ -25,9 +25,9 @@ describe('PipelineWorkspaceToolbar', () => {
   it('switches workspace modes', async () => {
     const wrapper = mountComponent();
 
-    await wrapper.findAll('button')[1].trigger('click');
+    await wrapper.findAll('button')[3].trigger('click');
 
-    expect(wrapper.emitted('update:viewMode')).toEqual([['list']]);
+    expect(wrapper.emitted('update:viewMode')).toEqual([['report']]);
   });
 
   it('emits search and structured filters', async () => {
@@ -44,5 +44,12 @@ describe('PipelineWorkspaceToolbar', () => {
       ...DEFAULT_PIPELINE_FILTERS,
       stageId: '1',
     });
+  });
+
+  it('hides item filters in report mode', () => {
+    const wrapper = mountComponent({ viewMode: 'report' });
+
+    expect(wrapper.find('input[type="search"]').exists()).toBe(false);
+    expect(wrapper.find('select').exists()).toBe(false);
   });
 });
