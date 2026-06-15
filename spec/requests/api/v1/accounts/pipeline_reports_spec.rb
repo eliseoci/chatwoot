@@ -170,6 +170,46 @@ RSpec.describe 'Pipeline Reports API', type: :request do
       end
     end
 
+    it 'deduplicates linked conversation attribution by pipeline item' do
+      contact = create(:contact, account: account)
+      item = create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: new_stage,
+        contact: contact
+      )
+      website_inbox = create(:inbox, account: account, name: 'Website')
+      email_inbox = create(:inbox, :with_email, account: account, name: 'Email')
+      first_website = create(:conversation, account: account, contact: contact, inbox: website_inbox)
+      second_website = create(:conversation, account: account, contact: contact, inbox: website_inbox)
+      email = create(:conversation, account: account, contact: contact, inbox: email_inbox)
+      create_link(item, first_website, source: 'conversation_sidebar')
+      create_link(item, second_website, source: 'conversation_sidebar')
+      create_link(item, email, source: 'automation')
+
+      get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",
+          headers: administrator.create_new_auth_token,
+          as: :json
+
+      expect(response.parsed_body['attribution']).to eq(
+        {
+          'sources' => [
+            { 'key' => 'automation', 'item_count' => 1 },
+            { 'key' => 'conversation_sidebar', 'item_count' => 1 }
+          ],
+          'inboxes' => [
+            { 'id' => email_inbox.id, 'name' => 'Email', 'item_count' => 1 },
+            { 'id' => website_inbox.id, 'name' => 'Website', 'item_count' => 1 }
+          ],
+          'channels' => [
+            { 'key' => 'Channel::Email', 'item_count' => 1 },
+            { 'key' => 'Channel::WebWidget', 'item_count' => 1 }
+          ]
+        }
+      )
+    end
+
     def create_terminal_item(terminal_stage, outcome_reason:)
       item = create(
         :pipeline_item,
@@ -205,6 +245,17 @@ RSpec.describe 'Pipeline Reports API', type: :request do
         status: :canceled,
         canceled_at: 1.hour.ago,
         due_at: 1.day.from_now
+      )
+    end
+
+    def create_link(item, conversation, source:)
+      create(
+        :pipeline_item_conversation,
+        account: account,
+        pipeline_item: item,
+        conversation: conversation,
+        linked_by: administrator,
+        source: source
       )
     end
   end
