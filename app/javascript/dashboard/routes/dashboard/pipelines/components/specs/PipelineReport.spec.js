@@ -53,9 +53,9 @@ describe('PipelineReport', () => {
       },
     });
 
-    expect(wrapper.findAll('[data-testid="pipeline-report-stage"]')).toHaveLength(
-      1
-    );
+    expect(
+      wrapper.findAll('[data-testid="pipeline-report-stage"]')
+    ).toHaveLength(1);
     expect(wrapper.text()).toContain('Qualified');
     expect(wrapper.text()).toContain('Nadia');
     expect(wrapper.text()).toContain('Won');
