@@ -91,5 +91,56 @@ RSpec.describe 'Pipeline Reports API', type: :request do
         expect(response.parsed_body['stages']).to eq(expected_stage_rows)
       end
     end
+
+    it 'reports explicit terminal outcomes and optional transition reasons' do
+      terminal_stage = create(
+        :pipeline_stage,
+        :terminal,
+        account: account,
+        pipeline: pipeline,
+        position: 2,
+        name: 'Won',
+        outcome_key: 'won'
+      )
+      create_terminal_item(terminal_stage, outcome_reason: 'Fast implementation')
+      create_terminal_item(terminal_stage, outcome_reason: nil)
+
+      get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",
+          headers: administrator.create_new_auth_token,
+          as: :json
+
+      expect(response.parsed_body['outcomes']).to eq(
+        [
+          {
+            'stage_id' => terminal_stage.id,
+            'stage_name' => 'Won',
+            'outcome_key' => 'won',
+            'item_count' => 2,
+            'reasons' => [
+              { 'reason' => nil, 'item_count' => 1 },
+              { 'reason' => 'Fast implementation', 'item_count' => 1 }
+            ]
+          }
+        ]
+      )
+    end
+
+    def create_terminal_item(terminal_stage, outcome_reason:)
+      item = create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: terminal_stage
+      )
+      create(
+        :pipeline_item_stage_transition,
+        account: account,
+        pipeline_item: item,
+        from_stage: new_stage,
+        to_stage: terminal_stage,
+        actor: administrator,
+        outcome_reason: outcome_reason
+      )
+    end
   end
 end
