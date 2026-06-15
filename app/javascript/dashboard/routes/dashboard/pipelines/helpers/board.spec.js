@@ -1,4 +1,8 @@
-import { buildPipelineItemPayload, groupItemsByStage } from './board';
+import {
+  buildPipelineItemPayload,
+  groupItemsByStage,
+  pipelineCapabilities,
+} from './board';
 
 describe('#groupItemsByStage', () => {
   it('keeps stage order and groups matching cards', () => {
@@ -69,6 +73,47 @@ describe('#buildPipelineItemPayload', () => {
         due_date: '2026-06-30',
         conversation_id: 12,
       },
+    });
+  });
+});
+
+describe('#pipelineCapabilities', () => {
+  it('normalizes server capabilities for UI controls', () => {
+    expect(
+      pipelineCapabilities({
+        capabilities: {
+          view: true,
+          create_item: true,
+          update_item: true,
+          move_item: false,
+          archive_item: false,
+          configure: false,
+          export: false,
+          automate: false,
+        },
+      })
+    ).toEqual({
+      canView: true,
+      canCreate: true,
+      canUpdate: true,
+      canMove: false,
+      canArchive: false,
+      canConfigure: false,
+      canExport: false,
+      canAutomate: false,
+    });
+  });
+
+  it('defaults every capability to false when authorization is absent', () => {
+    expect(pipelineCapabilities({})).toEqual({
+      canView: false,
+      canCreate: false,
+      canUpdate: false,
+      canMove: false,
+      canArchive: false,
+      canConfigure: false,
+      canExport: false,
+      canAutomate: false,
     });
   });
 });

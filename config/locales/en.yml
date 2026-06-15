@@ -112,6 +112,9 @@ en:
         invalid: is not a valid email address
     pipeline:
       stages_required: Add at least one stage to a custom pipeline.
+    pipeline_access_grant:
+      one_grantee: must reference exactly one user or team
+      account_mismatch: must belong to the same account as the pipeline
     pipeline_item:
       account_mismatch: must belong to the same account as the pipeline item
       stage_mismatch: must belong to the selected pipeline

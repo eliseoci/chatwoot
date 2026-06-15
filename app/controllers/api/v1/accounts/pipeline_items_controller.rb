@@ -1,14 +1,5 @@
 class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseController
-  before_action :fetch_pipeline_item,
-                only: [
-                  :show,
-                  :timeline,
-                  :ownership,
-                  :linked_conversations,
-                  :link_conversation,
-                  :unlink_conversation
-                ]
-  before_action :check_authorization
+  include Pipelines::Authorization::ItemControllerSupport
 
   def index
     @pipeline_items = pipeline_items_scope
@@ -44,6 +35,7 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
     ActiveRecord::Base.transaction do
       @pipeline_item = Current.account.pipeline_items.new(pipeline_item_attributes)
       assign_account_scoped_associations
+      authorize @pipeline_item, :create?
       @pipeline_item.save!
       link_create_conversation if params.dig(:pipeline_item, :conversation_id).present?
     end
@@ -84,20 +76,18 @@ class Api::V1::Accounts::PipelineItemsController < Api::V1::Accounts::BaseContro
   private
 
   def pipeline_items_scope
-    Current.account.pipeline_items
-           .preload(:pipeline, :stage, :contact, :owner, :team,
-                    :automation_runs,
-                    scheduled_activities: :assignee,
-                    conversation_links: [:linked_by, { conversation: [:inbox, :assignee] }])
-           .order(created_at: :desc)
-  end
-
-  def fetch_pipeline_item
-    @pipeline_item = pipeline_items_scope.find(params[:id])
+    policy_scope(Current.account.pipeline_items)
+      .preload(:pipeline, :stage, :contact, :owner, :team,
+               :automation_runs,
+               scheduled_activities: :assignee,
+               conversation_links: [:linked_by, { conversation: [:inbox, :assignee] }])
+      .order(created_at: :desc)
   end
 
   def fetch_pipeline
-    Current.account.pipelines.find(params[:pipeline_id].presence || params.dig(:pipeline_item, :pipeline_id))
+    policy_scope(Current.account.pipelines).find(
+      params[:pipeline_id].presence || params.dig(:pipeline_item, :pipeline_id)
+    )
   end
 
   def fetch_contact

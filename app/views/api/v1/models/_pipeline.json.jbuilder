@@ -3,6 +3,8 @@ json.account_id resource.account_id
 json.name resource.name
 json.description resource.description
 json.template_key resource.template_key
+json.access_mode resource.access_mode
+json.capabilities policy(resource).capabilities
 json.created_at resource.created_at
 json.updated_at resource.updated_at
 json.stages resource.stages do |stage|

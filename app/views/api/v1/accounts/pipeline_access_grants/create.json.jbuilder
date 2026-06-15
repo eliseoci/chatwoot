@@ -1,0 +1,3 @@
+json.partial! 'api/v1/models/pipeline_access_grant',
+              formats: [:json],
+              resource: @access_grant

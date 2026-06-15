@@ -1,7 +1,7 @@
 class Api::V1::Accounts::PipelineActivitiesController < Api::V1::Accounts::BaseController
   before_action :fetch_pipeline_item
   before_action :fetch_activity, only: [:update, :complete, :cancel]
-  before_action :check_authorization
+  before_action :authorize_pipeline_item
 
   def index
     @pipeline_activities = activities_scope.operational_order
@@ -32,7 +32,12 @@ class Api::V1::Accounts::PipelineActivitiesController < Api::V1::Accounts::BaseC
   private
 
   def fetch_pipeline_item
-    @pipeline_item = Current.account.pipeline_items.find(params[:pipeline_item_id])
+    @pipeline_item = policy_scope(Current.account.pipeline_items).find(params[:pipeline_item_id])
+  end
+
+  def authorize_pipeline_item
+    query = action_name == 'index' ? :show? : :ownership?
+    authorize @pipeline_item, query
   end
 
   def activities_scope

@@ -195,7 +195,8 @@ class ActionCableListener < BaseListener
   def broadcast_pipeline_item(event, event_name)
     pipeline_item = event.data[:pipeline_item]
     account = pipeline_item.account
-    tokens = user_tokens(account, account.agents)
+    recipients = Pipelines::Authorization::RecipientUsers.new(pipeline_item.pipeline).perform
+    tokens = user_tokens(account, recipients)
 
     broadcast(
       account,

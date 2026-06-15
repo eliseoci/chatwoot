@@ -304,8 +304,11 @@ Rails.application.routes.draw do
             end
           end
 
-          resources :pipelines, only: [:index, :show, :create] do
+          resources :pipelines, only: [:index, :show, :create, :update] do
             get :templates, on: :collection
+            resources :access_grants,
+                      controller: 'pipeline_access_grants',
+                      only: [:index, :create, :update, :destroy]
             resources :field_definitions,
                       controller: 'pipeline_field_definitions',
                       only: [:index, :create, :update, :destroy] do

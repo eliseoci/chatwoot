@@ -16,7 +16,7 @@ class Api::V1::Accounts::PipelineItemTransitionsController < Api::V1::Accounts::
   private
 
   def fetch_pipeline_item
-    @pipeline_item = Current.account.pipeline_items.find(params[:pipeline_item_id])
+    @pipeline_item = policy_scope(Current.account.pipeline_items).find(params[:pipeline_item_id])
   end
 
   def authorize_pipeline_item

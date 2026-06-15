@@ -109,6 +109,31 @@ RSpec.describe 'Pipeline Items API', type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    it 'rejects viewers from creating items in a restricted pipeline' do
+      pipeline.update!(access_mode: :restricted)
+      create(
+        :pipeline_access_grant,
+        account: account,
+        pipeline: pipeline,
+        user: agent,
+        access_level: :viewer
+      )
+
+      post "/api/v1/accounts/#{account.id}/pipeline_items",
+           params: {
+             pipeline_item: {
+               pipeline_id: pipeline.id,
+               stage_id: pipeline.stages.first.id,
+               contact_id: contact.id
+             }
+           },
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(account.pipeline_items).to be_empty
+    end
   end
 
   describe 'GET /api/v1/accounts/:account_id/pipeline_items' do
@@ -206,6 +231,24 @@ RSpec.describe 'Pipeline Items API', type: :request do
       expect(response.parsed_body.pluck('id')).to eq([item.id])
       expect(response.parsed_body.first.dig('workspace', 'attention_reasons')).to include('overdue_activity')
       expect(response.parsed_body.first.dig('workspace', 'inboxes', 0, 'id')).to eq(conversation.inbox_id)
+    end
+
+    it 'does not expose items from restricted pipelines to ungranted agents' do
+      pipeline.update!(access_mode: :restricted)
+      create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: pipeline.stages.first,
+        contact: contact
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipeline_items",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to be_empty
     end
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_06_14_009000) do
+ActiveRecord::Schema[7.1].define(version: 2026_06_14_010000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1241,6 +1241,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_009000) do
     t.index ["user_id"], name: "index_team_members_on_user_id"
   end
 
+  create_table "pipeline_access_grants", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "pipeline_id", null: false
+    t.bigint "user_id"
+    t.bigint "team_id"
+    t.integer "access_level", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_pipeline_access_grants_on_account_id"
+    t.index ["pipeline_id", "team_id"], name: "index_pipeline_access_grants_on_pipeline_and_team", unique: true, where: "(team_id IS NOT NULL)"
+    t.index ["pipeline_id", "user_id"], name: "index_pipeline_access_grants_on_pipeline_and_user", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["pipeline_id"], name: "index_pipeline_access_grants_on_pipeline_id"
+    t.index ["team_id"], name: "index_pipeline_access_grants_on_team_id"
+    t.index ["user_id"], name: "index_pipeline_access_grants_on_user_id"
+    t.check_constraint "access_level >= 0 AND access_level <= 1", name: "pipeline_access_grants_level_range"
+    t.check_constraint "(user_id IS NOT NULL) <> (team_id IS NOT NULL)", name: "pipeline_access_grants_one_grantee"
+  end
+
   create_table "pipeline_automation_action_runs", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "pipeline_automation_run_id", null: false
@@ -1478,10 +1496,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_009000) do
     t.string "name", null: false
     t.text "description"
     t.string "template_key", default: "custom", null: false
+    t.integer "access_mode", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id", "name"], name: "index_pipelines_on_account_id_and_name", unique: true
     t.index ["account_id"], name: "index_pipelines_on_account_id"
+    t.check_constraint "access_mode >= 0 AND access_mode <= 1", name: "pipelines_access_mode_range"
   end
 
   create_table "teams", force: :cascade do |t|
@@ -1567,6 +1587,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_06_14_009000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "pipeline_access_grants", "accounts"
+  add_foreign_key "pipeline_access_grants", "pipelines"
+  add_foreign_key "pipeline_access_grants", "teams", on_delete: :cascade
+  add_foreign_key "pipeline_access_grants", "users", on_delete: :cascade
   add_foreign_key "pipeline_automation_action_runs", "accounts"
   add_foreign_key "pipeline_automation_action_runs", "pipeline_automation_actions"
   add_foreign_key "pipeline_automation_action_runs", "pipeline_automation_runs"

@@ -34,7 +34,11 @@ import {
   buildPipelineActivityPayload,
   sortActivities,
 } from './helpers/activities';
-import { buildPipelineItemPayload, groupItemsByStage } from './helpers/board';
+import {
+  buildPipelineItemPayload,
+  groupItemsByStage,
+  pipelineCapabilities,
+} from './helpers/board';
 import { transitionMissingFields } from './helpers/customFields';
 import {
   attentionItems,
@@ -99,6 +103,9 @@ const form = reactive({
 const activePipeline = computed(() =>
   pipelines.value.find(pipeline => pipeline.id === activePipelineId.value)
 );
+const activeCapabilities = computed(() =>
+  pipelineCapabilities(activePipeline.value)
+);
 
 const selectedRequiredFieldKeys = computed(() => {
   if (!selectedItem.value) return [];
@@ -119,7 +126,10 @@ const visibleItems = computed(() =>
     : sortedItems.value
 );
 
-const isCreateDisabled = computed(() => !form.stageId || !form.contactId);
+const isCreateDisabled = computed(
+  () =>
+    !activeCapabilities.value.canCreate || !form.stageId || !form.contactId
+);
 
 const priorityOptions = computed(() => [
   { value: '', label: t('PIPELINES_BOARD.FORM.PRIORITY_NONE') },
@@ -344,6 +354,8 @@ const resetForm = () => {
 };
 
 const openCreateDialog = () => {
+  if (!activeCapabilities.value.canCreate) return;
+
   resetForm();
   dialogRef.value?.open();
 };
@@ -381,6 +393,8 @@ const createItem = async () => {
 };
 
 const transitionItem = async (item, targetStageId, source, optimistic = true) => {
+  if (!activeCapabilities.value.canMove) return;
+
   const previousStageId = item.stage_id;
   if (previousStageId === targetStageId) return;
 
@@ -510,6 +524,8 @@ const closeItemDetails = () => {
 };
 
 const saveFieldValues = async fieldValues => {
+  if (!activeCapabilities.value.canUpdate) return;
+
   if (!selectedItem.value) return;
 
   const item = selectedItem.value;
@@ -533,6 +549,8 @@ const saveFieldValues = async fieldValues => {
 };
 
 const linkConversation = async conversationId => {
+  if (!activeCapabilities.value.canUpdate) return;
+
   if (!selectedItem.value) return;
 
   const item = selectedItem.value;
@@ -565,6 +583,8 @@ const linkConversation = async conversationId => {
 };
 
 const unlinkConversation = async conversationId => {
+  if (!activeCapabilities.value.canUpdate) return;
+
   if (!selectedItem.value) return;
 
   const item = selectedItem.value;
@@ -600,6 +620,8 @@ const syncNextActivity = item => {
 };
 
 const saveActivity = async activityForm => {
+  if (!activeCapabilities.value.canUpdate) return;
+
   if (!selectedItem.value) return;
 
   const item = selectedItem.value;
@@ -647,6 +669,8 @@ const saveActivity = async activityForm => {
 };
 
 const changeActivityStatus = async (activityId, action) => {
+  if (!activeCapabilities.value.canUpdate) return;
+
   if (!selectedItem.value) return;
 
   const item = selectedItem.value;
@@ -803,7 +827,7 @@ onBeforeUnmount(() => {
           </option>
         </select>
         <Button
-          v-if="activePipeline"
+          v-if="activePipeline && activeCapabilities.canCreate"
           size="sm"
           icon="i-lucide-plus"
           :label="$t('PIPELINES_BOARD.ADD_ITEM')"
@@ -909,6 +933,7 @@ onBeforeUnmount(() => {
           :group="{ name: 'pipeline-items' }"
           item-key="id"
           handle=".pipeline-item-drag-handle"
+          :disabled="!activeCapabilities.canMove"
           class="flex min-h-24 flex-col gap-2 rounded-xl bg-n-alpha-black2 p-2"
           ghost-class="opacity-50"
           @change="handleDragChange($event, column)"
@@ -919,6 +944,7 @@ onBeforeUnmount(() => {
             >
               <div class="flex items-start gap-2">
                 <button
+                  v-if="activeCapabilities.canMove"
                   type="button"
                   class="pipeline-item-drag-handle mt-0.5 cursor-grab text-n-slate-9 hover:text-n-slate-11"
                   :aria-label="
@@ -1047,6 +1073,7 @@ onBeforeUnmount(() => {
                     })
                   "
                   class="h-7 min-w-0 flex-1 rounded-md border-0 bg-n-alpha-black2 px-2 text-xs text-n-slate-11 outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
+                  :disabled="!activeCapabilities.canMove"
                   @change="moveItemWithCommand(item, $event)"
                 >
                   <option
@@ -1188,6 +1215,7 @@ onBeforeUnmount(() => {
         :items="visibleItems"
         :stages="activePipeline?.stages || []"
         :attention-mode="viewMode === 'attention'"
+        :can-move="activeCapabilities.canMove"
         @move="moveItemFromList"
         @open="openItemDetails"
       />
@@ -1323,6 +1351,7 @@ onBeforeUnmount(() => {
       :field-definitions="activePipeline?.field_definitions || []"
       :required-field-keys="selectedRequiredFieldKeys"
       :is-saving-field-values="isSavingFieldValues"
+      :can-edit="activeCapabilities.canUpdate"
       @close="closeItemDetails"
       @link-conversation="linkConversation"
       @unlink-conversation="unlinkConversation"

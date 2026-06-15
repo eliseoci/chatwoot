@@ -65,6 +65,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  canEdit: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -355,6 +359,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
 
             <form
               class="grid gap-3 rounded-xl bg-n-alpha-black2 p-4 sm:grid-cols-2"
+              :class="{ 'opacity-70': !canEdit }"
+              :inert="!canEdit"
               @submit.prevent="saveFieldValues"
             >
               <div
@@ -501,6 +507,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
 
             <form
               class="grid gap-3 rounded-xl bg-n-alpha-black2 p-4 sm:grid-cols-2"
+              :class="{ 'opacity-70': !canEdit }"
+              :inert="!canEdit"
               @submit.prevent="saveActivity"
             >
               <label class="flex flex-col gap-1 text-heading-3 text-n-slate-12">
@@ -659,7 +667,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
               </div>
 
               <div
-                v-if="activity.status === 'scheduled'"
+                v-if="activity.status === 'scheduled' && canEdit"
                 class="flex flex-wrap gap-2 border-t border-n-weak pt-3"
               >
                 <Button
@@ -716,7 +724,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
                 v-model="selectedConversationId"
                 :aria-label="$t('PIPELINES_BOARD.DETAIL.LINK.SELECT_LABEL')"
                 class="h-9 min-w-0 flex-1 rounded-lg border-0 bg-n-alpha-black2 px-3 text-sm text-n-slate-12 outline outline-1 -outline-offset-1 outline-n-weak focus:outline-n-brand"
-                :disabled="isLoadingCandidates || !availableConversations.length"
+                :disabled="
+                  !canEdit || isLoadingCandidates || !availableConversations.length
+                "
               >
                 <option disabled value="">
                   {{
@@ -737,7 +747,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
                 size="sm"
                 icon="i-lucide-link"
                 :label="$t('PIPELINES_BOARD.DETAIL.LINK.ACTION')"
-                :disabled="!selectedConversationId || activeConversationId !== null"
+                :disabled="
+                  !canEdit ||
+                  !selectedConversationId ||
+                  activeConversationId !== null
+                "
                 :is-loading="activeConversationId === Number(selectedConversationId)"
                 @click="submitLink"
               />
@@ -832,6 +846,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown));
 
               <div class="flex items-center justify-between border-t border-n-weak pt-3">
                 <Button
+                  v-if="canEdit"
                   variant="ghost"
                   color="slate"
                   size="xs"

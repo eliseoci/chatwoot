@@ -77,6 +77,22 @@ describe ActionCableListener do
 
       listener.pipeline_item_updated(event)
     end
+
+    it 'does not broadcast restricted pipeline items to ungranted agents' do
+      pipeline_item.pipeline.update!(access_mode: :restricted)
+
+      expect(ActionCableBroadcastJob).to receive(:perform_later).with(
+        [admin.pubsub_token],
+        'pipeline.item_updated',
+        {
+          account_id: account.id,
+          pipeline_id: pipeline_item.pipeline_id,
+          pipeline_item_id: pipeline_item.id
+        }
+      )
+
+      listener.pipeline_item_updated(event)
+    end
   end
 
   describe '#typing_on' do

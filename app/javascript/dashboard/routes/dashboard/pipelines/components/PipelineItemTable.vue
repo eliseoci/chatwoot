@@ -16,6 +16,10 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  canMove: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['move', 'open']);
@@ -133,6 +137,7 @@ const openWithKeyboard = (item, event) => {
                   title: item.display_title,
                 })
               "
+              :disabled="!canMove"
               @change="
                 $emit('move', {
                   item,

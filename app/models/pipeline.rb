@@ -14,6 +14,10 @@ class Pipeline < ApplicationRecord
   TEMPLATE_KEYS = %w[sales support recruitment onboarding collections real_estate custom].freeze
 
   belongs_to :account
+  has_many :access_grants,
+           class_name: 'PipelineAccessGrant',
+           inverse_of: :pipeline,
+           dependent: :destroy
   has_many :stages,
            -> { order(:position) },
            class_name: 'PipelineStage',
@@ -33,6 +37,8 @@ class Pipeline < ApplicationRecord
            class_name: 'PipelineAutomationRule',
            inverse_of: :pipeline,
            dependent: :destroy
+
+  enum :access_mode, { all_agents: 0, restricted: 1 }, prefix: true
 
   validates :name, presence: true, uniqueness: { scope: :account_id }
   validates :template_key, presence: true, inclusion: { in: TEMPLATE_KEYS }

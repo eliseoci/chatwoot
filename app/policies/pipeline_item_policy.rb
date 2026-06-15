@@ -1,41 +1,54 @@
 class PipelineItemPolicy < ApplicationPolicy
   def index?
-    true
+    account_user.present?
   end
 
   def show?
-    true
+    pipeline_policy.show?
   end
 
   def create?
-    true
+    pipeline_policy.create_item?
   end
 
   def timeline?
-    true
+    show?
   end
 
   def transition?
-    true
+    pipeline_policy.move_item?
   end
 
   def ownership?
-    true
+    pipeline_policy.update_item?
   end
 
   def field_values?
-    true
+    pipeline_policy.update_item?
   end
 
   def linked_conversations?
-    true
+    show?
   end
 
   def link_conversation?
-    true
+    pipeline_policy.update_item?
   end
 
   def unlink_conversation?
-    true
+    pipeline_policy.update_item?
+  end
+
+  private
+
+  def pipeline_policy
+    PipelinePolicy.new(user_context, record.pipeline)
+  end
+
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      pipeline_scope = PipelinePolicy::Scope.new(user_context, account.pipelines).resolve
+      scope.where(pipeline_id: pipeline_scope.select(:id))
+    end
   end
 end

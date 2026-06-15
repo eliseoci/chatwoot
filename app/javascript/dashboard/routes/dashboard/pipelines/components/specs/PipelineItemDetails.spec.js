@@ -39,6 +39,7 @@ const mountComponent = () =>
         },
       ],
       requiredFieldKeys: ['summary'],
+      canEdit: true,
     },
     global: {
       mocks: { $t: key => key },

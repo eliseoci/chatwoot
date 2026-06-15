@@ -33,6 +33,7 @@ const mountComponent = () =>
         { id: 10, name: 'Qualified' },
         { id: 11, name: 'Proposal' },
       ],
+      canMove: true,
     },
     global: {
       mocks: { $t: key => key },

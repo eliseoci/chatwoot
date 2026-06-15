@@ -110,6 +110,26 @@ a separate approval capability rather than another action enum value.
 Maps existing account users, teams, and role capabilities to pipeline actions.
 It must not create a second user directory or weaken account isolation.
 
+### Pipeline Authorization
+
+Extends Community Edition authorization without importing Enterprise custom
+roles. Pipelines remain open to account agents by default for backward
+compatibility. An administrator may mark a pipeline as restricted and grant
+viewer or operator access to existing account users or teams.
+
+The capability boundary is:
+
+- viewer: view the pipeline, its items, timelines, activities, and permitted
+  linked-conversation summaries;
+- operator: viewer access plus create, update, move, link, and activity work;
+- administrator: all operator capabilities plus pipeline configuration,
+  automation, export, archival, and access management.
+
+Policies, policy scopes, API serializers, UI controls, and real-time recipient
+selection use the same capability evaluator. Restricted records must not appear
+in lists, counts, filters, search results, reports, or Action Cable broadcasts
+for ungranted agents.
+
 ### Pipeline API and Events
 
 Exposes account-scoped APIs and lifecycle events. Events support real-time UI,
@@ -193,6 +213,11 @@ Pipelines must not:
 ## Data invariants
 
 - Every record is account-scoped.
+- Pipeline access grants reference exactly one existing account user or team.
+- Administrators always retain pipeline configuration and access-management
+  rights.
+- Restricted pipelines are visible only to administrators and explicitly
+  granted users or team members.
 - A Pipeline owns an ordered set of Pipeline Stages.
 - A terminal Pipeline Stage must declare an explicit outcome key; an active
   stage must not declare one.

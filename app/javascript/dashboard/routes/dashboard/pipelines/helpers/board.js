@@ -4,6 +4,21 @@ export const groupItemsByStage = (stages, items) =>
     items: items.filter(item => item.stage_id === stage.id),
   }));
 
+export const pipelineCapabilities = pipeline => {
+  const capabilities = pipeline?.capabilities || {};
+
+  return {
+    canView: Boolean(capabilities.view),
+    canCreate: Boolean(capabilities.create_item),
+    canUpdate: Boolean(capabilities.update_item),
+    canMove: Boolean(capabilities.move_item),
+    canArchive: Boolean(capabilities.archive_item),
+    canConfigure: Boolean(capabilities.configure),
+    canExport: Boolean(capabilities.export),
+    canAutomate: Boolean(capabilities.automate),
+  };
+};
+
 export const buildPipelineItemPayload = ({
   pipelineId,
   stageId,

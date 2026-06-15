@@ -85,6 +85,47 @@ RSpec.describe 'Pipelines API', type: :request do
       )
       expect(response.parsed_body.first['stages'].second['required_field_keys']).to eq([field.key])
     end
+
+    it 'does not expose restricted pipelines without a direct or team grant' do
+      restricted_pipeline = create(
+        :pipeline,
+        account: account,
+        name: 'Restricted',
+        access_mode: :restricted
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipelines",
+          headers: agent.create_new_auth_token,
+          as: :json
+      expect(response.parsed_body.pluck('id')).to eq([pipeline.id])
+
+      create(
+        :pipeline_access_grant,
+        account: account,
+        pipeline: restricted_pipeline,
+        user: agent,
+        access_level: :viewer
+      )
+
+      get "/api/v1/accounts/#{account.id}/pipelines",
+          headers: agent.create_new_auth_token,
+          as: :json
+      expect(response.parsed_body.pluck('id')).to contain_exactly(
+        pipeline.id,
+        restricted_pipeline.id
+      )
+      expect(
+        response.parsed_body.find { |item| item['id'] == restricted_pipeline.id }
+      ).to include(
+        'access_mode' => 'restricted',
+        'capabilities' => hash_including(
+          'view' => true,
+          'create_item' => false,
+          'move_item' => false,
+          'configure' => false
+        )
+      )
+    end
   end
 
   describe 'GET /api/v1/accounts/:account_id/pipelines/:id' do

@@ -113,6 +113,7 @@ class User < ApplicationRecord
            foreign_key: :owner_id,
            inverse_of: :owner,
            dependent: :nullify
+  has_many :pipeline_access_grants, dependent: :destroy_async
   has_many :assigned_pipeline_activities,
            class_name: 'PipelineActivity',
            foreign_key: :assignee_id,

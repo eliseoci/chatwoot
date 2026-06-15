@@ -23,6 +23,7 @@ class Team < ApplicationRecord
   has_many :members, through: :team_members, source: :user
   has_many :conversations, dependent: :nullify
   has_many :pipeline_items, dependent: :nullify
+  has_many :pipeline_access_grants, dependent: :destroy_async
 
   validates :name,
             presence: { message: I18n.t('errors.validations.presence') },
