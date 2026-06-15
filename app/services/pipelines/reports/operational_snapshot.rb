@@ -15,7 +15,8 @@ class Pipelines::Reports::OperationalSnapshot
       },
       stages: stage_rows,
       outcomes: outcome_rows,
-      activities: activity_snapshot
+      activities: activity_snapshot,
+      attribution: attribution_snapshot
     }
   end
 
@@ -90,6 +91,10 @@ class Pipelines::Reports::OperationalSnapshot
       pipeline: pipeline,
       generated_at: generated_at
     ).perform
+  end
+
+  def attribution_snapshot
+    Pipelines::Reports::AttributionSnapshot.new(pipeline: pipeline).perform
   end
 
   def average_age(ages)
