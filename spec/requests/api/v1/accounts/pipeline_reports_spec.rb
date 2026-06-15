@@ -128,15 +128,15 @@ RSpec.describe 'Pipeline Reports API', type: :request do
     it 'reports activity status and owner workload in the account timezone' do
       account.update!(reporting_timezone: 'America/New_York')
       owner = create(:user, account: account, name: 'Nadia Owner')
-      item = create(
-        :pipeline_item,
-        account: account,
-        pipeline: pipeline,
-        stage: new_stage,
-        owner: owner
-      )
 
       travel_to Time.zone.parse('2026-06-15 02:00:00 UTC') do
+        item = create(
+          :pipeline_item,
+          account: account,
+          pipeline: pipeline,
+          stage: new_stage,
+          owner: owner
+        )
         create_report_activities(item, owner)
 
         get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",

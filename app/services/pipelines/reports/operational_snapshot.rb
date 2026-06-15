@@ -8,12 +8,14 @@ class Pipelines::Reports::OperationalSnapshot
     {
       generated_at: generated_at.utc.iso8601,
       timezone: reporting_timezone,
+      reporting_date: generated_at.in_time_zone(reporting_timezone).to_date.iso8601,
       pipeline: {
         id: pipeline.id,
         name: pipeline.name
       },
       stages: stage_rows,
-      outcomes: outcome_rows
+      outcomes: outcome_rows,
+      activities: activity_snapshot
     }
   end
 
@@ -81,6 +83,13 @@ class Pipelines::Reports::OperationalSnapshot
 
   def items
     @items ||= pipeline.items.includes(:stage_transitions).to_a
+  end
+
+  def activity_snapshot
+    Pipelines::Reports::ActivitySnapshot.new(
+      pipeline: pipeline,
+      generated_at: generated_at
+    ).perform
   end
 
   def average_age(ages)
