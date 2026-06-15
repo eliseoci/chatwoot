@@ -125,6 +125,51 @@ RSpec.describe 'Pipeline Reports API', type: :request do
       )
     end
 
+    it 'reports activity status and owner workload in the account timezone' do
+      account.update!(reporting_timezone: 'America/New_York')
+      owner = create(:user, account: account, name: 'Nadia Owner')
+      item = create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: new_stage,
+        owner: owner
+      )
+
+      travel_to Time.zone.parse('2026-06-15 02:00:00 UTC') do
+        create_report_activities(item, owner)
+
+        get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",
+            headers: administrator.create_new_auth_token,
+            as: :json
+
+        expect(response.parsed_body).to include(
+          'timezone' => 'America/New_York',
+          'reporting_date' => '2026-06-14'
+        )
+        expect(response.parsed_body['activities']).to eq(
+          {
+            'summary' => {
+              'due' => 1,
+              'overdue' => 1,
+              'completed' => 1,
+              'canceled' => 1
+            },
+            'owners' => [
+              {
+                'assignee_id' => owner.id,
+                'assignee_name' => 'Nadia Owner',
+                'due' => 1,
+                'overdue' => 1,
+                'completed' => 1,
+                'canceled' => 1
+              }
+            ]
+          }
+        )
+      end
+    end
+
     def create_terminal_item(terminal_stage, outcome_reason:)
       item = create(
         :pipeline_item,
@@ -140,6 +185,26 @@ RSpec.describe 'Pipeline Reports API', type: :request do
         to_stage: terminal_stage,
         actor: administrator,
         outcome_reason: outcome_reason
+      )
+    end
+
+    def create_report_activities(item, owner)
+      common = { account: account, pipeline_item: item, assignee: owner }
+      create(:pipeline_activity, **common, due_at: 1.hour.ago)
+      create(:pipeline_activity, **common, due_at: 1.hour.from_now)
+      create(
+        :pipeline_activity,
+        **common,
+        status: :completed,
+        completed_at: 1.hour.ago,
+        due_at: 1.day.ago
+      )
+      create(
+        :pipeline_activity,
+        **common,
+        status: :canceled,
+        canceled_at: 1.hour.ago,
+        due_at: 1.day.from_now
       )
     end
   end
