@@ -135,6 +135,10 @@ fi
 publish_workflow='.github/workflows/publish_nexo_image.yml'
 release_validator='script/nexo/validate_release_tag.sh'
 distribution_document='docs/nexo/distribution.md'
+upstream_publish_workflows=(
+  '.github/workflows/publish_foss_docker.yml'
+  '.github/workflows/publish_ee_docker.yml'
+)
 
 [[ -f "$publish_workflow" ]] ||
   fail "missing immutable image publication workflow: $publish_workflow"
@@ -168,5 +172,10 @@ grep -q 'bundle exec sidekiq -C config/sidekiq.yml' "$distribution_document" ||
   fail 'distribution documentation must define the Worker command'
 grep -q 'ACTIVE_STORAGE_SERVICE=s3_compatible' "$distribution_document" ||
   fail 'distribution documentation must define external S3-compatible storage'
+
+for upstream_publish_workflow in "${upstream_publish_workflows[@]}"; do
+  grep -q "'!v\\*-nexo\\.\\*'" "$upstream_publish_workflow" ||
+    fail "Nexo tags must not trigger upstream publication: $upstream_publish_workflow"
+done
 
 printf 'Nexo distribution guardrails passed for %s\n' "$nexo_version"
