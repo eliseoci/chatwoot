@@ -3,6 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Pipeline Reports API', type: :request do
   let(:account) { create(:account) }
   let(:administrator) { create(:user, account: account, role: :administrator) }
+  let(:agent) { create(:user, account: account, role: :agent) }
   let(:pipeline) { create(:pipeline, account: account) }
   let!(:new_stage) do
     create(:pipeline_stage, account: account, pipeline: pipeline, position: 0, name: 'New')
@@ -208,6 +209,66 @@ RSpec.describe 'Pipeline Reports API', type: :request do
           ]
         }
       )
+    end
+
+    it 'returns a stable empty report contract' do
+      get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",
+          headers: administrator.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include(
+        'outcomes' => [],
+        'activities' => {
+          'summary' => {
+            'due' => 0,
+            'overdue' => 0,
+            'completed' => 0,
+            'canceled' => 0
+          },
+          'owners' => []
+        },
+        'attribution' => {
+          'sources' => [],
+          'inboxes' => [],
+          'channels' => []
+        }
+      )
+      expect(response.parsed_body['stages']).to all(
+        include(
+          'item_count' => 0,
+          'average_age_seconds' => 0,
+          'oldest_age_seconds' => 0
+        )
+      )
+    end
+
+    it 'does not expose restricted or cross-account pipeline reports' do
+      pipeline.update!(access_mode: :restricted)
+      other_account = create(:account)
+      other_pipeline = create(:pipeline, account: other_account)
+
+      get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",
+          headers: agent.create_new_auth_token,
+          as: :json
+      expect(response).to have_http_status(:not_found)
+
+      create(
+        :pipeline_access_grant,
+        account: account,
+        pipeline: pipeline,
+        user: agent,
+        access_level: :viewer
+      )
+      get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",
+          headers: agent.create_new_auth_token,
+          as: :json
+      expect(response).to have_http_status(:success)
+
+      get "/api/v1/accounts/#{account.id}/pipelines/#{other_pipeline.id}/report",
+          headers: administrator.create_new_auth_token,
+          as: :json
+      expect(response).to have_http_status(:not_found)
     end
 
     def create_terminal_item(terminal_stage, outcome_reason:)
