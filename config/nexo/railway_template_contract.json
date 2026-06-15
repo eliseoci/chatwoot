@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "status": "published_and_smoke_verified",
+  "template": {
+    "id": "b506e365-4d5f-42d4-97ce-e66dba3404ff",
+    "code": "nexo-chatwoot-pipelines",
+    "url": "https://railway.com/deploy/nexo-chatwoot-pipelines",
+    "name": "Nexo Chatwoot Pipelines",
+    "category": "Automation",
+    "description": "Chatwoot CE with Nexo Pipelines, Postgres 16, Valkey 8, and S3 storage.",
+    "status": "PUBLISHED"
+  },
+  "release": {
+    "chatwoot_version": "4.14.2",
+    "nexo_version": "4.14.2-nexo.0",
+    "image": "ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:8576d9d3a9535a59fc729ea6c9394ab7a3bd70de9a1f8d3eac947a3daaa86d30",
+    "migration_command": "POSTGRES_STATEMENT_TIMEOUT=600s bundle exec rails db:chatwoot_prepare",
+    "railway_migration_command": "/bin/sh -lc 'POSTGRES_STATEMENT_TIMEOUT=600s bundle exec rails db:chatwoot_prepare'",
+    "migration_execution": "single_run_before_web_start"
+  },
+  "source_project": {
+    "project_id": "f501f9bf-f945-456c-84eb-bf3e183622a1",
+    "environment_id": "1f31560b-937a-4dac-8cab-2b7b52454859",
+    "environment_name": "template",
+    "verified_health_url": "https://nexo-chatwoot-web-template.up.railway.app/health",
+    "verified_health_response": "{\"status\":\"woot\"}"
+  },
+  "smoke_project": {
+    "project_id": "d8f3be3d-e429-4652-b56e-aca7c8c65637",
+    "environment_id": "55e2e41d-e831-4198-837d-f8a7c0a4d353",
+    "environment_name": "production",
+    "verified_health_url": "https://nexo-chatwoot-web-production.up.railway.app/health",
+    "verified_health_response": "{\"status\":\"woot\"}",
+    "verified_at": "2026-06-15T22:39:00Z"
+  },
+  "services": {
+    "web": {
+      "name": "nexo-chatwoot-web",
+      "smoke_service_id": "57f4ea1a-d14d-43ca-936a-1bbd6487a6ce",
+      "type": "application",
+      "image": "ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:8576d9d3a9535a59fc729ea6c9394ab7a3bd70de9a1f8d3eac947a3daaa86d30",
+      "start_command": "/bin/sh -lc 'bundle exec rails server -p \"$PORT\" -b 0.0.0.0'",
+      "predeploy_command": "/bin/sh -lc 'POSTGRES_STATEMENT_TIMEOUT=600s bundle exec rails db:chatwoot_prepare'",
+      "healthcheck_path": "/health",
+      "public_domain_required": true,
+      "restart_policy": "ALWAYS",
+      "persistent_volume": false,
+      "verified_deployment_id": "ea6244e1-4695-4329-a663-053ad9718ac1"
+    },
+    "worker": {
+      "name": "nexo-chatwoot-worker",
+      "smoke_service_id": "1a2f0cce-7291-44a4-a4d2-562cdd026924",
+      "type": "application",
+      "image": "ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:8576d9d3a9535a59fc729ea6c9394ab7a3bd70de9a1f8d3eac947a3daaa86d30",
+      "start_command": "bundle exec sidekiq -C config/sidekiq.yml",
+      "restart_policy": "ALWAYS",
+      "persistent_volume": false,
+      "verified_deployment_id": "fce4489c-ab9f-4046-be6a-bb5257486b76"
+    },
+    "postgres": {
+      "name": "Postgres",
+      "smoke_service_id": "e1563765-8723-44c2-bc86-18bed54bedb1",
+      "type": "database",
+      "image": "pgvector/pgvector:pg16",
+      "major_version": 16,
+      "persistent_volume_path": "/var/lib/postgresql/data",
+      "restart_policy": "ALWAYS",
+      "public_networking": false,
+      "verified_deployment_id": "2d405bfd-9ef0-4031-956b-1f86314eaf52"
+    },
+    "valkey": {
+      "name": "nexo-valkey",
+      "smoke_service_id": "bdf4f694-4509-4c79-aec5-13abe1926147",
+      "type": "cache",
+      "image": "valkey/valkey:8-alpine",
+      "persistent_volume_path": "/data",
+      "restart_policy": "ALWAYS",
+      "public_networking": false,
+      "verified_deployment_id": "fdb3309b-bb61-4edb-8716-0343d091e8ae"
+    },
+    "object_storage": {
+      "name": "nexo-chatwoot-uploads",
+      "smoke_bucket_id": "7f4e4c16-9f41-4af4-9832-69830185fde8",
+      "type": "railway_bucket",
+      "persistent_volume": false,
+      "public_bucket": false
+    }
+  },
+  "serialized_config_requirements": {
+    "must_include_buckets": true,
+    "must_include_service_volume_mounts": true,
+    "must_include_web_predeploy_command": true,
+    "must_include_restart_policy": true,
+    "must_hydrate_default_values_before_direct_api_deploy": true
+  },
+  "railway_cli_limitation": {
+    "observed_with_cli_version": "5.13.0",
+    "cli_deploy_template_supported_for_full_v2_contract": false,
+    "reason": "railway deploy --template deserializes only services and startCommand/healthcheckPath before templateDeployV2, which drops buckets, preDeployCommand, restartPolicyType, and other V2-only fields.",
+    "safe_deploy_path": "Railway dashboard one-click deploy, or templateDeployV2 with the published serializedConfig preserved and defaultValue entries hydrated into value."
+  },
+  "verification": {
+    "published_template_search_verified": true,
+    "source_project_health_verified": true,
+    "smoke_project_health_verified": true,
+    "web_predeploy_preserved_in_smoke_manifest": true,
+    "web_worker_postgres_valkey_success": true,
+    "bucket_created": true,
+    "storage_upload_read_delete_verified": true,
+    "worker_sidekiq_alive_started": true,
+    "worker_scheduled_job_performed": true,
+    "valkey_authenticated_connection_verified_by_worker": true,
+    "production_project_mutated": false
+  }
+}

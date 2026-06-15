@@ -143,6 +143,9 @@ railway_contract='config/nexo/railway_staging_contract.json'
 railway_validator='script/nexo/validate_railway_staging_contract.rb'
 railway_runbook='docs/nexo/railway-staging.md'
 railway_rehearsal='docs/nexo/railway-migration-rehearsal.md'
+railway_template_contract='config/nexo/railway_template_contract.json'
+railway_template_validator='script/nexo/validate_railway_template_contract.rb'
+railway_template_runbook='docs/nexo/railway-template.md'
 
 [[ -f "$publish_workflow" ]] ||
   fail "missing immutable image publication workflow: $publish_workflow"
@@ -190,6 +193,13 @@ done
   fail "missing Railway staging runbook: $railway_runbook"
 [[ -f "$railway_rehearsal" ]] ||
   fail "missing Railway migration rehearsal evidence: $railway_rehearsal"
+[[ -f "$railway_template_contract" ]] ||
+  fail "missing Railway template contract: $railway_template_contract"
+[[ -f "$railway_template_validator" ]] ||
+  fail "missing Railway template validator: $railway_template_validator"
+[[ -f "$railway_template_runbook" ]] ||
+  fail "missing Railway template runbook: $railway_template_runbook"
 ruby "$railway_validator" "$railway_contract"
+ruby "$railway_template_validator" "$railway_template_contract"
 
 printf 'Nexo distribution guardrails passed for %s\n' "$nexo_version"
