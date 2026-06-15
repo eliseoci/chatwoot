@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "status": "provisioned_and_verified",
+  "environment": "staging",
+  "target": {
+    "project_id": "93404cd1-0fc9-4a0f-9319-722685cc81f0",
+    "environment_id": "27ca71ff-726f-4f76-8117-506bc5a62ca4",
+    "expected_environment_name": "staging",
+    "source_environment_name": "production",
+    "source_environment_id": "e1870bd4-1808-4b29-9d4f-a6e4b4caa9cb",
+    "requires_explicit_target_confirmation": true,
+    "production_mutation_allowed": false
+  },
+  "release": {
+    "chatwoot_version": "4.14.2",
+    "nexo_version": "4.14.2-nexo.0",
+    "image": "ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:8576d9d3a9535a59fc729ea6c9394ab7a3bd70de9a1f8d3eac947a3daaa86d30",
+    "migration_command": "POSTGRES_STATEMENT_TIMEOUT=600s bundle exec rails db:chatwoot_prepare",
+    "railway_migration_command": "/bin/sh -lc 'POSTGRES_STATEMENT_TIMEOUT=600s bundle exec rails db:chatwoot_prepare'",
+    "migration_execution": "single_run_before_app_start",
+    "migration_deployment_id": "c3e71a88-61b3-4377-a918-64bb2b33ddcf"
+  },
+  "services": {
+    "web": {
+      "id": "ce724e5a-2231-4732-a19f-bf6654a0d6bd",
+      "name": "nexo-chatwoot-web",
+      "type": "application",
+      "image": "ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:8576d9d3a9535a59fc729ea6c9394ab7a3bd70de9a1f8d3eac947a3daaa86d30",
+      "start_command": "/bin/sh -lc 'bundle exec rails server -p \"$PORT\" -b 0.0.0.0'",
+      "domain": "https://nexo-chatwoot-web-staging.up.railway.app",
+      "region": "us-east4-eqdc4a",
+      "healthcheck": {
+        "type": "http",
+        "path": "/health",
+        "timeout_seconds": 300
+      },
+      "restart_policy": "ALWAYS",
+      "persistent_volume": false,
+      "verified_deployment_id": "bb55b246-a955-469a-bc5f-b9c9bc5ce56d"
+    },
+    "worker": {
+      "id": "96da393f-2a16-4cf9-93ac-bb48d0926456",
+      "name": "nexo-chatwoot-worker",
+      "type": "application",
+      "image": "ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:8576d9d3a9535a59fc729ea6c9394ab7a3bd70de9a1f8d3eac947a3daaa86d30",
+      "start_command": "bundle exec sidekiq -C config/sidekiq.yml",
+      "region": "us-east4-eqdc4a",
+      "healthcheck": {
+        "type": "process_and_logs",
+        "http_path": null,
+        "operational_probe": "bundle exec rails runner \"require 'sidekiq/api'; exit(Sidekiq::ProcessSet.new.size.positive? ? 0 : 1)\""
+      },
+      "restart_policy": "ALWAYS",
+      "persistent_volume": false,
+      "verified_deployment_id": "71ca0c33-09b2-454e-93f0-a1c1e9ac50b6"
+    },
+    "postgres": {
+      "id": "b89dbdad-1346-47b3-984a-2ab37d14f693",
+      "name": "Postgres",
+      "type": "database",
+      "image": "pgvector/pgvector:pg16",
+      "major_version": 16,
+      "region": "us-east4-eqdc4a",
+      "volume_id": "31571dbd-514f-4664-a22b-0c31314eaaab",
+      "persistent_volume_path": "/var/lib/postgresql/data",
+      "public_networking": false
+    },
+    "valkey": {
+      "id": "9be11a8b-66e2-4867-8050-878ea3fdfa49",
+      "name": "nexo-valkey",
+      "type": "cache",
+      "image": "valkey/valkey:8-alpine",
+      "region": "us-east4-eqdc4a",
+      "volume_id": "ca0e8b91-1ee8-4340-aa42-e70733b8593e",
+      "persistent_volume_path": "/data",
+      "public_networking": false,
+      "credential_strategy": "one_stable_secret_written_via_stdin"
+    },
+    "object_storage": {
+      "id": "962dfe27-7de4-47e1-ad11-0e3b32a0c540",
+      "name": "nexo-chatwoot-uploads",
+      "type": "railway_bucket",
+      "region": "iad",
+      "persistent_volume": false
+    }
+  },
+  "application_variables": {
+    "RAILS_ENV": "production",
+    "RAILS_LOG_TO_STDOUT": "true",
+    "NODE_ENV": "production",
+    "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+    "REDIS_URL": "<set-via-stdin:stable-private-valkey-url>",
+    "SECRET_KEY_BASE": "${{shared.NEXO_SECRET_KEY_BASE}}",
+    "ENABLE_ACCOUNT_SIGNUP": "false",
+    "ACTIVE_STORAGE_SERVICE": "s3_compatible",
+    "STORAGE_ACCESS_KEY_ID": "${{shared.NEXO_STORAGE_ACCESS_KEY_ID}}",
+    "STORAGE_SECRET_ACCESS_KEY": "${{shared.NEXO_STORAGE_SECRET_ACCESS_KEY}}",
+    "STORAGE_REGION": "${{shared.NEXO_STORAGE_REGION}}",
+    "STORAGE_BUCKET_NAME": "${{shared.NEXO_STORAGE_BUCKET_NAME}}",
+    "STORAGE_ENDPOINT": "${{shared.NEXO_STORAGE_ENDPOINT}}",
+    "STORAGE_FORCE_PATH_STYLE": "false"
+  },
+  "verification": {
+    "backup_file": "staging-pre-nexo-4.14.2-nexo.0-20260615.sql",
+    "backup_sha256": "15aebf0005aa14646932dd90dc602b75bb3cba0db098bca8c3f4d76f96fc20e5",
+    "backup_restore_verified": true,
+    "pre_migration_count": 135,
+    "post_migration_count": 147,
+    "pipeline_migration_count": 12,
+    "smoke_deployment_id": "19a3565b-e7f0-465b-803a-01fe9777cb63",
+    "storage_upload_read_delete_verified": true,
+    "pipeline_conversation_smoke_verified": true,
+    "synthetic_records_rolled_back": true,
+    "rollback_image": "ghcr.io/railwayapp-templates/chatwoot:Community@sha256:cdab29d860f4966e32dcac0997099857813a7d7100a43db1d414c2c3199106e8",
+    "rollback_web_deployment_id": "9f455763-96d3-49e0-b5ac-4f20055aea86",
+    "rollback_worker_deployment_id": "ec8d5c6d-c81f-46a6-acc4-ce8c81523360",
+    "rollforward_verified": true
+  },
+  "safety": {
+    "fresh_or_synthetic_data_only": true,
+    "accounts_after_rehearsal": 0,
+    "contacts_after_rehearsal": 0,
+    "conversations_after_rehearsal": 0,
+    "messages_after_rehearsal": 0,
+    "production_domain_attached": false,
+    "production_webhooks_enabled": false,
+    "smtp_enabled": false,
+    "customer_channel_credentials_present": false,
+    "worker_started_after_migration": true,
+    "production_service_ids_referenced": false,
+    "legacy_shared_staging_services_mutated": false
+  }
+}

@@ -139,6 +139,10 @@ upstream_publish_workflows=(
   '.github/workflows/publish_foss_docker.yml'
   '.github/workflows/publish_ee_docker.yml'
 )
+railway_contract='config/nexo/railway_staging_contract.json'
+railway_validator='script/nexo/validate_railway_staging_contract.rb'
+railway_runbook='docs/nexo/railway-staging.md'
+railway_rehearsal='docs/nexo/railway-migration-rehearsal.md'
 
 [[ -f "$publish_workflow" ]] ||
   fail "missing immutable image publication workflow: $publish_workflow"
@@ -177,5 +181,15 @@ for upstream_publish_workflow in "${upstream_publish_workflows[@]}"; do
   grep -q "'!v\\*-nexo\\.\\*'" "$upstream_publish_workflow" ||
     fail "Nexo tags must not trigger upstream publication: $upstream_publish_workflow"
 done
+
+[[ -f "$railway_contract" ]] ||
+  fail "missing Railway staging contract: $railway_contract"
+[[ -f "$railway_validator" ]] ||
+  fail "missing Railway staging validator: $railway_validator"
+[[ -f "$railway_runbook" ]] ||
+  fail "missing Railway staging runbook: $railway_runbook"
+[[ -f "$railway_rehearsal" ]] ||
+  fail "missing Railway migration rehearsal evidence: $railway_rehearsal"
+ruby "$railway_validator" "$railway_contract"
 
 printf 'Nexo distribution guardrails passed for %s\n' "$nexo_version"
