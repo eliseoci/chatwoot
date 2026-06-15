@@ -1,6 +1,7 @@
 name: Nexo distribution guardrails
 
 on:
+  workflow_call:
   pull_request:
   push:
     branches:
@@ -30,7 +31,14 @@ jobs:
           fetch-depth: 0
 
       - name: Validate shell syntax
-        run: bash -n script/nexo/validate_distribution_guardrails.sh
+        run: |
+          bash -n \
+            script/nexo/validate_distribution_guardrails.sh \
+            script/nexo/validate_release_tag.sh \
+            script/nexo/test_release_tag_validation.sh
+
+      - name: Validate release tag contract
+        run: script/nexo/test_release_tag_validation.sh
 
       - name: Validate version and license boundaries
         env:

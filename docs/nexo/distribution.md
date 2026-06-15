@@ -110,6 +110,62 @@ Stateful dependencies remain separate:
 The distribution must never package PostgreSQL or Valkey inside the Chatwoot
 application image.
 
+## Runtime commands
+
+The immutable image has no environment-specific startup decision baked into
+it. Configure each stateless service with one explicit command:
+
+```text
+Web      bundle exec rails server -p 3000 -b 0.0.0.0
+Worker   bundle exec sidekiq -C config/sidekiq.yml
+Release  POSTGRES_STATEMENT_TIMEOUT=600s bundle exec rails db:chatwoot_prepare
+```
+
+Run the Release command once for a deployment before starting or replacing Web
+and Worker replicas. Do not run migrations from every replica startup command.
+
+Web and Worker use the same pinned image reference:
+
+```text
+ghcr.io/eliseoci/chatwoot-pipelines:v4.14.2-nexo.0@sha256:<digest>
+```
+
+The runtime expects external stateful services. At minimum configure:
+
+```text
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://...
+ACTIVE_STORAGE_SERVICE=s3_compatible
+STORAGE_ACCESS_KEY_ID=...
+STORAGE_SECRET_ACCESS_KEY=...
+STORAGE_REGION=...
+STORAGE_BUCKET_NAME=...
+STORAGE_ENDPOINT=https://...
+STORAGE_FORCE_PATH_STYLE=true
+```
+
+Use `ACTIVE_STORAGE_SERVICE=amazon` and the corresponding AWS variables when
+the object-storage provider uses the standard AWS S3 endpoint.
+
+## Image publication
+
+Pushing an exact `v<chatwoot>-nexo.<release>` tag runs
+`.github/workflows/publish_nexo_image.yml`. Publication is rejected unless the
+tag equals `v` plus the value in `VERSION_NEXO`.
+
+The workflow:
+
+1. runs the Nexo distribution guardrails and focused Pipelines test suites;
+2. removes `enterprise/` and `spec/enterprise` from the build context;
+3. builds AMD64 and ARM64 Community Edition images in CI;
+4. pushes platform images by digest;
+5. creates the release-tagged multi-platform manifest;
+6. records the manifest digest in the job summary and a release artifact.
+
+The release artifact includes the tag, immutable reference, upstream Chatwoot
+version, Nexo version, source commit, and license. Local production image
+builds are not part of the development workflow.
+
 ## Production gate
 
 Creating an image or a Railway staging topology does not authorize a production

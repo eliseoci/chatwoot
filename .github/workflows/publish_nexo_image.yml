@@ -1,0 +1,215 @@
+name: Publish immutable Nexo Chatwoot image
+
+on:
+  push:
+    tags:
+      - 'v*-nexo.*'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  IMAGE_NAME: ghcr.io/eliseoci/chatwoot-pipelines
+
+jobs:
+  verify:
+    uses: ./.github/workflows/nexo-guardrails.yml
+
+  release-metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      chatwoot_version: ${{ steps.release.outputs.chatwoot_version }}
+      nexo_version: ${{ steps.release.outputs.nexo_version }}
+      source_commit: ${{ steps.release.outputs.source_commit }}
+      image_name: ${{ steps.release.outputs.image_name }}
+      image_ref: ${{ steps.release.outputs.image_ref }}
+    steps:
+      - name: Checkout release
+        uses: actions/checkout@v4
+
+      - name: Validate release tag
+        id: release
+        env:
+          NEXO_RELEASE_TAG: ${{ github.ref_name }}
+        run: script/nexo/validate_release_tag.sh
+
+  build:
+    needs:
+      - verify
+      - release-metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout release
+        uses: actions/checkout@v4
+
+      - name: Prepare platform identifier
+        run: |
+          platform='${{ matrix.platform }}'
+          echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
+
+      - name: Strip Enterprise code
+        run: rm -rf enterprise spec/enterprise
+
+      - name: Set Community Edition
+        run: printf '\nENV CW_EDITION="ce"\n' >> docker/Dockerfile
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push platform image by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: true
+          outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          labels: |
+            org.opencontainers.image.title=Nexo Chatwoot Pipelines
+            org.opencontainers.image.description=Chatwoot Community Edition with Nexo-owned Pipelines
+            org.opencontainers.image.source=https://github.com/eliseoci/chatwoot
+            org.opencontainers.image.revision=${{ needs.release-metadata.outputs.source_commit }}
+            org.opencontainers.image.version=${{ needs.release-metadata.outputs.nexo_version }}
+            org.opencontainers.image.licenses=MIT
+            io.nexo.chatwoot.version=${{ needs.release-metadata.outputs.chatwoot_version }}
+            io.nexo.release=${{ needs.release-metadata.outputs.release_tag }}
+          cache-from: type=gha,scope=nexo-${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=nexo-${{ env.PLATFORM_PAIR }}
+
+      - name: Export platform digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest='${{ steps.build.outputs.digest }}'
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload platform digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexo-digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-manifest:
+    needs:
+      - release-metadata
+      - build
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.publish.outputs.digest }}
+      image_ref: ${{ needs.release-metadata.outputs.image_ref }}
+    steps:
+      - name: Download platform digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: nexo-digests-*
+          merge-multiple: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create immutable multi-platform manifest
+        id: publish
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE_NAME: ${{ needs.release-metadata.outputs.image_name }}
+          IMAGE_REF: ${{ needs.release-metadata.outputs.image_ref }}
+          RELEASE_TAG: ${{ needs.release-metadata.outputs.release_tag }}
+          CHATWOOT_VERSION: ${{ needs.release-metadata.outputs.chatwoot_version }}
+          NEXO_VERSION: ${{ needs.release-metadata.outputs.nexo_version }}
+          SOURCE_COMMIT: ${{ needs.release-metadata.outputs.source_commit }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$IMAGE_REF" \
+            --annotation "index:org.opencontainers.image.title=Nexo Chatwoot Pipelines" \
+            --annotation "index:org.opencontainers.image.description=Chatwoot Community Edition with Nexo-owned Pipelines" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/eliseoci/chatwoot" \
+            --annotation "index:org.opencontainers.image.revision=$SOURCE_COMMIT" \
+            --annotation "index:org.opencontainers.image.version=$NEXO_VERSION" \
+            --annotation "index:org.opencontainers.image.licenses=MIT" \
+            --annotation "index:io.nexo.chatwoot.version=$CHATWOOT_VERSION" \
+            --annotation "index:io.nexo.release=$RELEASE_TAG" \
+            --metadata-file manifest-metadata.json \
+            $(printf "$IMAGE_NAME@sha256:%s " *)
+
+          digest="$(jq -r '."containerimage.descriptor".digest' manifest-metadata.json)"
+          test -n "$digest"
+          test "$digest" != 'null'
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+          docker buildx imagetools inspect "$IMAGE_REF"
+
+      - name: Record immutable release
+        env:
+          IMAGE_NAME: ${{ needs.release-metadata.outputs.image_name }}
+          IMAGE_REF: ${{ needs.release-metadata.outputs.image_ref }}
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+          RELEASE_TAG: ${{ needs.release-metadata.outputs.release_tag }}
+          CHATWOOT_VERSION: ${{ needs.release-metadata.outputs.chatwoot_version }}
+          NEXO_VERSION: ${{ needs.release-metadata.outputs.nexo_version }}
+          SOURCE_COMMIT: ${{ needs.release-metadata.outputs.source_commit }}
+        run: |
+          jq -n \
+            --arg image "$IMAGE_NAME" \
+            --arg tag "$RELEASE_TAG" \
+            --arg digest "$IMAGE_DIGEST" \
+            --arg image_ref "$IMAGE_REF@$IMAGE_DIGEST" \
+            --arg chatwoot_version "$CHATWOOT_VERSION" \
+            --arg nexo_version "$NEXO_VERSION" \
+            --arg source_commit "$SOURCE_COMMIT" \
+            '{
+              image: $image,
+              tag: $tag,
+              digest: $digest,
+              immutable_ref: $image_ref,
+              chatwoot_version: $chatwoot_version,
+              nexo_version: $nexo_version,
+              source_commit: $source_commit,
+              license: "MIT"
+            }' > nexo-image-release.json
+
+          {
+            echo '## Nexo Chatwoot image'
+            echo
+            echo "- Tag: \`$IMAGE_REF\`"
+            echo "- Digest: \`$IMAGE_DIGEST\`"
+            echo "- Immutable reference: \`$IMAGE_REF@$IMAGE_DIGEST\`"
+            echo "- Source commit: \`$SOURCE_COMMIT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload immutable release record
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexo-image-${{ needs.release-metadata.outputs.release_tag }}
+          path: nexo-image-release.json
+          if-no-files-found: error
+          retention-days: 90

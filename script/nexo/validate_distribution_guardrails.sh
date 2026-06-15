@@ -132,4 +132,41 @@ if [[ -n "$changed_files" ]]; then
   done <<< "$changed_files"
 fi
 
+publish_workflow='.github/workflows/publish_nexo_image.yml'
+release_validator='script/nexo/validate_release_tag.sh'
+distribution_document='docs/nexo/distribution.md'
+
+[[ -f "$publish_workflow" ]] ||
+  fail "missing immutable image publication workflow: $publish_workflow"
+[[ -f "$release_validator" ]] ||
+  fail "missing release tag validator: $release_validator"
+
+grep -q "tags:" "$publish_workflow" &&
+  grep -q "'v\\*-nexo\\.\\*'" "$publish_workflow" ||
+  fail 'image publication workflow must be limited to Nexo release tags'
+grep -q 'packages: write' "$publish_workflow" ||
+  fail 'image publication workflow must declare GHCR package write permission'
+grep -q 'ghcr.io/eliseoci/chatwoot-pipelines' "$publish_workflow" ||
+  fail 'image publication workflow must target the canonical GHCR repository'
+grep -q 'validate_release_tag.sh' "$publish_workflow" ||
+  fail 'image publication workflow must validate the release tag and version files'
+grep -q 'rm -rf enterprise spec/enterprise' "$publish_workflow" ||
+  fail 'image publication workflow must strip Enterprise code before image creation'
+grep -q 'push-by-digest=true' "$publish_workflow" ||
+  fail 'image publication workflow must publish platform images by digest'
+grep -q 'docker buildx imagetools create' "$publish_workflow" ||
+  fail 'image publication workflow must create the immutable multi-platform manifest'
+grep -q 'GITHUB_STEP_SUMMARY' "$publish_workflow" ||
+  fail 'image publication workflow must expose the published image digest'
+grep -q 'io.nexo.chatwoot.version' "$publish_workflow" &&
+  grep -q 'org.opencontainers.image.licenses=MIT' "$publish_workflow" ||
+  fail 'image publication workflow must record version and license metadata'
+
+grep -q 'bundle exec rails db:chatwoot_prepare' "$distribution_document" ||
+  fail 'distribution documentation must define the explicit release migration command'
+grep -q 'bundle exec sidekiq -C config/sidekiq.yml' "$distribution_document" ||
+  fail 'distribution documentation must define the Worker command'
+grep -q 'ACTIVE_STORAGE_SERVICE=s3_compatible' "$distribution_document" ||
+  fail 'distribution documentation must define external S3-compatible storage'
+
 printf 'Nexo distribution guardrails passed for %s\n' "$nexo_version"
