@@ -3,6 +3,7 @@
 # Table name: pipeline_item_stage_transitions
 #
 #  id               :bigint           not null, primary key
+#  outcome_reason   :string
 #  source           :string           not null
 #  created_at       :datetime         not null
 #  updated_at       :datetime         not null
@@ -27,6 +28,7 @@ class PipelineItemStageTransition < ApplicationRecord
            dependent: :destroy
 
   validates :source, presence: true, inclusion: { in: SOURCES }
+  validates :outcome_reason, length: { maximum: 255 }, allow_blank: true
   validate :associations_match_pipeline_item
 
   private

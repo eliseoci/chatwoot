@@ -1,9 +1,10 @@
 class Pipelines::Items::TransitionStageService
-  def initialize(pipeline_item:, target_stage_id:, actor:, source:)
+  def initialize(pipeline_item:, target_stage_id:, actor:, source:, outcome_reason: nil)
     @pipeline_item = pipeline_item
     @target_stage_id = target_stage_id
     @actor = actor
     @source = source
+    @outcome_reason = outcome_reason
   end
 
   def perform
@@ -24,7 +25,7 @@ class Pipelines::Items::TransitionStageService
 
   private
 
-  attr_reader :pipeline_item, :target_stage_id, :actor, :source
+  attr_reader :pipeline_item, :target_stage_id, :actor, :source, :outcome_reason
 
   def validate_required_fields!(target_stage)
     definitions = target_stage.pipeline.field_definitions.active
@@ -50,7 +51,8 @@ class Pipelines::Items::TransitionStageService
       from_stage: previous_stage,
       to_stage: target_stage,
       actor: actor,
-      source: source
+      source: source,
+      outcome_reason: target_stage.terminal? ? outcome_reason.presence : nil
     )
   end
 end

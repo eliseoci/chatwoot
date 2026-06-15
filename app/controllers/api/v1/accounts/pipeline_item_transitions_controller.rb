@@ -7,7 +7,8 @@ class Api::V1::Accounts::PipelineItemTransitionsController < Api::V1::Accounts::
       pipeline_item: @pipeline_item,
       target_stage_id: transition_params[:stage_id],
       actor: Current.user,
-      source: transition_params[:source].presence || 'api'
+      source: transition_params[:source].presence || 'api',
+      outcome_reason: transition_params[:outcome_reason]
     ).perform
   rescue Pipelines::Items::MissingRequiredFieldsError => e
     render_missing_fields(e)
@@ -24,7 +25,7 @@ class Api::V1::Accounts::PipelineItemTransitionsController < Api::V1::Accounts::
   end
 
   def transition_params
-    params.require(:transition).permit(:stage_id, :source)
+    params.require(:transition).permit(:stage_id, :source, :outcome_reason)
   end
 
   def render_missing_fields(error)

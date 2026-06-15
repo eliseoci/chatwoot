@@ -12,7 +12,8 @@ class Pipelines::Reports::OperationalSnapshot
         id: pipeline.id,
         name: pipeline.name
       },
-      stages: stage_rows
+      stages: stage_rows,
+      outcomes: outcome_rows
     }
   end
 
@@ -25,8 +26,8 @@ class Pipelines::Reports::OperationalSnapshot
   end
 
   def stage_rows
-    ages_by_stage = pipeline.items.includes(:stage_transitions).group_by(&:stage_id).transform_values do |items|
-      items.map { |item| stage_age_seconds(item) }
+    ages_by_stage = items.group_by(&:stage_id).transform_values do |stage_items|
+      stage_items.map { |item| stage_age_seconds(item) }
     end
 
     pipeline.stages.order(:position).map do |stage|
@@ -48,11 +49,38 @@ class Pipelines::Reports::OperationalSnapshot
   end
 
   def stage_age_seconds(item)
-    entered_at = item.stage_transitions
-                     .select { |transition| transition.to_stage_id == item.stage_id }
-                     .max_by(&:created_at)
-                     &.created_at
+    entered_at = current_stage_transition(item)&.created_at
     (generated_at - (entered_at || item.created_at)).to_i
+  end
+
+  def outcome_rows
+    pipeline.stages.select(&:terminal?).map do |stage|
+      outcome_row(stage, items.select { |item| item.stage_id == stage.id })
+    end
+  end
+
+  def outcome_row(stage, outcome_items)
+    reasons = outcome_items.map { |item| current_stage_transition(item)&.outcome_reason }
+                           .tally
+                           .sort_by { |reason, _count| [reason.present? ? 1 : 0, reason.to_s] }
+                           .map { |reason, count| { reason: reason, item_count: count } }
+    {
+      stage_id: stage.id,
+      stage_name: stage.name,
+      outcome_key: stage.outcome_key,
+      item_count: outcome_items.length,
+      reasons: reasons
+    }
+  end
+
+  def current_stage_transition(item)
+    item.stage_transitions
+        .select { |transition| transition.to_stage_id == item.stage_id }
+        .max_by(&:created_at)
+  end
+
+  def items
+    @items ||= pipeline.items.includes(:stage_transitions).to_a
   end
 
   def average_age(ages)
