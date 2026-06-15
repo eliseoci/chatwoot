@@ -1,0 +1,95 @@
+require 'rails_helper'
+
+RSpec.describe 'Pipeline Reports API', type: :request do
+  let(:account) { create(:account) }
+  let(:administrator) { create(:user, account: account, role: :administrator) }
+  let(:pipeline) { create(:pipeline, account: account) }
+  let!(:new_stage) do
+    create(:pipeline_stage, account: account, pipeline: pipeline, position: 0, name: 'New')
+  end
+  let!(:qualified_stage) do
+    create(:pipeline_stage, account: account, pipeline: pipeline, position: 1, name: 'Qualified')
+  end
+
+  describe 'GET /api/v1/accounts/:account_id/pipelines/:pipeline_id/report' do
+    def create_stage_history
+      create_new_item
+      qualified_item = create_qualified_item
+      create_transition(qualified_item)
+    end
+
+    def create_new_item
+      create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: new_stage,
+        created_at: 10.days.ago,
+        updated_at: 1.minute.ago
+      )
+    end
+
+    def create_qualified_item
+      create(
+        :pipeline_item,
+        account: account,
+        pipeline: pipeline,
+        stage: qualified_stage,
+        created_at: 8.days.ago,
+        updated_at: 1.minute.ago
+      )
+    end
+
+    def create_transition(qualified_item)
+      create(
+        :pipeline_item_stage_transition,
+        account: account,
+        pipeline_item: qualified_item,
+        from_stage: new_stage,
+        to_stage: qualified_stage,
+        actor: administrator,
+        created_at: 2.days.ago
+      )
+    end
+
+    def expected_stage_rows
+      [
+        expected_stage_row(new_stage, age: 10.days),
+        expected_stage_row(qualified_stage, age: 2.days)
+      ]
+    end
+
+    def expected_stage_row(stage, age:)
+      {
+        'id' => stage.id,
+        'name' => stage.name,
+        'position' => stage.position,
+        'terminal' => stage.terminal,
+        'outcome_key' => stage.outcome_key,
+        'item_count' => 1,
+        'average_age_seconds' => age.to_i,
+        'oldest_age_seconds' => age.to_i
+      }
+    end
+
+    it 'reports current stage volume and aging from transition history' do
+      travel_to Time.zone.parse('2026-06-15 12:00:00 UTC') do
+        create_stage_history
+        get "/api/v1/accounts/#{account.id}/pipelines/#{pipeline.id}/report",
+            headers: administrator.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to include(
+          'generated_at' => '2026-06-15T12:00:00Z',
+          'timezone' => 'UTC',
+          'pipeline' => {
+            'id' => pipeline.id,
+            'name' => pipeline.name
+          }
+        )
+        expect(response.parsed_body['stages']).to eq(expected_stage_rows)
+      end
+    end
+  end
+end
