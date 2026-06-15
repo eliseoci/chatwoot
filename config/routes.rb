@@ -304,6 +304,7 @@ Rails.application.routes.draw do
             end
           end
 
+          get 'pipelines/:pipeline_id/report', to: 'pipeline_reports#show'
           resources :pipelines, only: [:index, :show, :create, :update] do
             get :templates, on: :collection
             resources :access_grants,
